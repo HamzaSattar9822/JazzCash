@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JazzCash Assistant — Conversational Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --jc-red:#A6081C;
+    --jc-red-dark:#6E0512;
+    --jc-red-tint:#FBE7E9;
+    --jc-gold:#F5C518;
+    --jc-gold-dark:#8A6100;
+    --jc-gold-tint:#FDECC8;
+    --ink:#181818;
+    --muted:#6B7280;
+    --line:#ECECEE;
+    --page:#EDEEF1;
+    --white:#FFFFFF;
+    --success:#1E8E3E;
+    --success-tint:#E8F7EC;
+    --warn-tint:#FFF6E5;
+    --heal-tint:#E7F6EE;
+    --heal-dark:#146C43;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:var(--font); background:var(--page); display:flex; flex-direction:column; align-items:center; gap:14px; min-height:100vh; padding:28px 16px 60px; color:var(--ink); }
+  .layout{ display:flex; align-items:flex-start; justify-content:center; gap:20px; flex-wrap:wrap; }
+
+  /* ---------- side demo panel ---------- */
+  .demo-bar{ width:220px; background:var(--ink); color:#fff; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; font-size:12px; }
+  .demo-bar b{font-weight:700; color:var(--jc-gold); letter-spacing:.02em; display:block; font-size:12.5px; margin-bottom:2px;}
+  .demo-bar .demo-hint{ font-size:11px; color:#ADADB2; line-height:1.45; margin-bottom:4px; }
+  .demo-actions{ display:flex; flex-direction:column; gap:7px; }
+  .demo-btn{ background:#2c2c2c; color:#fff; border:1px solid #3d3d3d; border-radius:8px; padding:9px 11px; font-size:12px; font-family:var(--font); cursor:pointer; text-align:left; width:100%; transition:opacity .2s; }
+  .demo-btn:hover{background:#3a3a3a;}
+  .demo-btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+  /* ---------- phone ---------- */
+  .phone{ width:390px; height:844px; max-width:100%; background:var(--white); border-radius:38px; box-shadow:0 30px 60px -20px rgba(0,0,0,.35), 0 0 0 10px #0c0c0e; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:22px; background:#0c0c0e; border-radius:0 0 14px 14px; z-index:50; }
+  .status-row{ display:flex; justify-content:space-between; align-items:center; padding:14px 20px 4px; font-size:12px; font-weight:600; flex-shrink:0; }
+
+  .screens{ flex:1; min-height:0; position:relative; }
+  .screen{ position:absolute; inset:0; overflow-y:auto; display:none; padding-bottom:16px; }
+  .screen.active{ display:block; }
+  .screen::-webkit-scrollbar{ display:none; }
+
+  .app-header{ display:flex; align-items:center; justify-content:space-between; padding:14px 20px 14px; flex-shrink:0; }
+  .brand{ display:flex; align-items:center; gap:7px; }
+  .brand img{ height:24px; }
+  .brand-fallback{ font-weight:800; font-size:19px; letter-spacing:-.02em; }
+  .brand-fallback .jazz{ color:var(--ink); } .brand-fallback .cash{ color:var(--jc-red); }
+  .icon-btn{ width:36px; height:36px; border-radius:50%; background:#F1F1F3; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#555; border:none; flex-shrink:0; }
+  .icon-btn svg{ width:17px; height:17px; }
+
+  .balance-card{ margin:0 20px 14px; padding:20px; border-radius:20px; color:#fff; background:radial-gradient(120% 130% at 85% -10%, #D4132A 0%, var(--jc-red) 42%, var(--jc-red-dark) 100%); position:relative; overflow:hidden; }
+  .balance-label{ font-size:12px; opacity:.85; font-weight:500; }
+  .balance-amount{ font-size:29px; font-weight:800; margin:4px 0 14px; letter-spacing:-.02em; }
+  .balance-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .add-money-btn{ background:var(--jc-gold); color:#4A3300; border:none; padding:10px 16px; border-radius:22px; font-size:12.5px; font-weight:800; font-family:var(--font); cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .add-money-btn:hover{ filter:brightness(0.96); }
+  .masked-card-text{ font-size:11.5px; color:rgba(255,255,255,.85); font-weight:500; }
+
+  .quick-row{ display:flex; justify-content:space-between; padding:4px 20px 20px; }
+  .quick-item{ display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; width:58px; }
+  .quick-icon{ width:52px; height:52px; border-radius:50%; background:var(--jc-red-tint); display:flex; align-items:center; justify-content:center; color:var(--jc-red); }
+  .quick-icon svg{ width:21px; height:21px; }
+  .quick-item span{ font-size:10.5px; font-weight:600; text-align:center; color:var(--ink); line-height:1.2; }
+
+  .offers-wrap{ padding:0 0 18px; }
+  .offers-scroll{ display:flex; gap:10px; overflow-x:auto; padding:0 20px 4px; scrollbar-width:none; }
+  .offers-scroll::-webkit-scrollbar{ display:none; }
+  .offer-card{ flex:0 0 auto; width:210px; background:linear-gradient(135deg,#FFF8E6,#FFF1CC); border:1px solid #F2DFA0; border-radius:16px; padding:12px 13px; }
+  .offer-card .row1{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .offer-card .ico{ width:30px; height:30px; border-radius:9px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .offer-card b{ font-size:12.5px; }
+  .offer-card .disc{ font-size:11.5px; font-weight:800; color:var(--jc-red-dark); display:block; }
+  .offer-card .reason{ font-size:10.5px; color:var(--muted); line-height:1.3; margin-top:3px; }
+
+  .nudge-banner{ margin:0 20px 16px; background:var(--warn-tint); border:1px solid #F3DFA6; border-radius:14px; padding:12px 14px; display:none; gap:10px; align-items:flex-start; cursor:pointer; }
+  .nudge-banner.show{ display:flex; }
+  .nudge-banner .ic{ font-size:18px; }
+  .nudge-banner .txt b{ display:block; font-size:12.5px; margin-bottom:2px; }
+  .nudge-banner .txt span{ font-size:12px; color:var(--muted); }
+
+  .section-label{ padding:0 20px 10px; font-size:13.5px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+  .section-label a{ font-size:11.5px; color:var(--jc-red); font-weight:600; text-decoration:none; }
+
+  .txn-list{ padding:0 20px; display:flex; flex-direction:column; gap:9px; }
+  .txn{ display:flex; align-items:center; gap:12px; padding:12px 13px; cursor:pointer; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 1px 2px rgba(16,16,18,.04); transition:box-shadow .15s ease, transform .15s ease; }
+  .txn:hover{ box-shadow:0 4px 12px rgba(16,16,18,.08); transform:translateY(-1px); }
+  .txn.is-fail{ background:var(--jc-red-tint); border-color:#F0CACD; }
+  .txn-icon{ width:38px; height:38px; border-radius:50%; background:#F1F1F3; display:flex; align-items:center; justify-content:center; color:var(--jc-red); flex-shrink:0; }
+  .txn-icon svg{ width:16px; height:16px; }
+  .txn-icon.fail{ background:#F6D9DC; }
+  .txn-icon.credit{ background:var(--success-tint); color:var(--success); }
+  .txn-body{ flex:1; min-width:0; }
+  .txn-title{ font-size:13px; font-weight:600; }
+  .txn-sub{ font-size:11.5px; color:var(--muted); margin-top:1px; }
+  .txn-hint{ font-size:11px; color:var(--jc-red); font-weight:700; margin-top:2px; }
+  .txn-amt{ font-size:13px; font-weight:700; white-space:nowrap; text-align:right; }
+  .txn-amt.debit{ color:var(--ink); }
+  .txn-amt.credit{ color:var(--success); }
+  .txn-amt.fail{ color:var(--jc-red); }
+  .txn-status{ font-size:10px; font-weight:700; margin-top:3px; text-align:right; }
+  .txn-status.ok{ color:var(--success); }
+  .txn-status.bad{ color:var(--jc-red); }
+  .list-tip{ margin:14px 20px 0; font-size:11.5px; color:var(--muted); }
+  /* ---------- loan repayment add-on ---------- */
+  .loan-plan{ border:1px solid var(--line); border-radius:12px; padding:11px; margin-top:8px; background:#fff; cursor:pointer; }
+  .loan-plan:hover{ border-color:#D9C4C8; }
+  .loan-plan.selected{ border:2px solid var(--jc-red); background:var(--jc-red-tint); padding:10px; }
+  .loan-plan b{ font-size:12px; }
+  .loan-plan small{ display:block; color:var(--muted); font-size:10.5px; margin-top:2px; line-height:1.3; }
+  .loan-plan-row{ display:flex; justify-content:space-between; gap:8px; margin-top:7px; font-size:10.5px; font-weight:700; }
+  .loan-note{ font-size:10.5px; color:var(--muted); margin-top:8px; line-height:1.35; }
+  .home-loan-card{ margin:12px 20px 0; border:1px solid #E9D8DB; border-radius:14px; background:#FFF9FA; padding:13px; cursor:pointer; box-shadow:0 3px 10px rgba(90,0,14,.04); }
+  .home-loan-card:hover{ border-color:#D9C4C8; }
+  .home-loan-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .home-loan-title{ display:flex; align-items:center; gap:9px; min-width:0; }
+  .home-loan-icon{ width:34px; height:34px; border-radius:10px; background:#fff; border:1px solid #EADBDD; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:17px; }
+  .home-loan-title b{ display:block; font-size:12.5px; }
+  .home-loan-title span{ display:block; color:var(--muted); font-size:10.5px; margin-top:2px; }
+  .home-loan-status{ font-size:10px; font-weight:800; padding:5px 7px; border-radius:999px; background:#F2F5F3; color:#317354; white-space:nowrap; }
+  .home-loan-status.warning{ background:#FFF1D7; color:#9A6200; }
+  .home-loan-status.danger{ background:#FDE8EB; color:#A6081C; }
+  .home-loan-main{ display:flex; justify-content:space-between; gap:12px; margin-top:12px; }
+  .home-loan-main .amt{ font-size:18px; font-weight:800; line-height:1.05; }
+  .home-loan-main .meta{ font-size:10.5px; color:var(--muted); margin-top:3px; }
+  .home-loan-arrow{ align-self:center; color:var(--jc-red); font-weight:800; font-size:16px; }
+  .home-loan-progress{ height:6px; border-radius:99px; background:#F0E4E6; margin-top:11px; overflow:hidden; }
+  .home-loan-progress > div{ height:100%; background:var(--jc-red); border-radius:99px; transition:width .3s ease; }
+  .home-loan-foot{ display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size:10px; color:var(--muted); }
+
+  /* ---------- tab bar ---------- */
+  .tabbar{ position:relative; flex-shrink:0; height:74px; background:#fff; border-top:1px solid var(--line); display:flex; padding-bottom:12px; z-index:40; }
+  .tab{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; color:#9CA0A6; font-size:10.5px; font-weight:600; position:relative; background:none; border:none; font-family:var(--font); }
+  .tab svg{ width:19px; height:19px; }
+  .tab.active{ color:var(--jc-red); }
+  .tab .tab-dot{ position:absolute; top:2px; right:26%; width:8px; height:8px; background:var(--jc-red); border-radius:50%; border:2px solid #fff; display:none; }
+
+  /* ---------- floating assistant button ---------- */
+  .fab{ position:absolute; right:18px; bottom:90px; width:56px; height:56px; border-radius:50%; background:var(--jc-red); box-shadow:0 10px 24px -6px rgba(166,8,28,.55); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:45; border:none; }
+  .fab svg{ width:24px; height:24px; }
+
+  /* ---------- toast ---------- */
+  .toast{ position:absolute; top:16px; left:14px; right:14px; background:var(--ink); color:#fff; border-radius:13px; padding:11px 13px; display:flex; gap:10px; align-items:flex-start; box-shadow:0 12px 24px rgba(0,0,0,.25); transform:translateY(-120px); transition:transform .35s ease; z-index:90; cursor:pointer; }
+  .toast.show{ transform:translateY(0); }
+  .toast .ic{ font-size:16px; }
+  .toast b{ display:block; font-size:12px; color:var(--jc-gold); margin-bottom:2px; }
+  .toast span{ font-size:12px; line-height:1.35; color:#eee; }
+  .toast.heal b{ color:#8FE0B4; }
+
+  /* ---------- assistant bottom sheet ---------- */
+  .sheet-overlay{ position:absolute; inset:0; background:rgba(0,0,0,.35); z-index:60; opacity:0; pointer-events:none; transition:opacity .25s ease; }
+  .sheet-overlay.show{ opacity:1; pointer-events:auto; }
+  .sheet{ position:absolute; left:0; right:0; bottom:0; height:88%; background:#fff; border-radius:22px 22px 0 0; z-index:70; transform:translateY(100%); transition:transform .32s cubic-bezier(.32,.72,0,1); display:flex; flex-direction:column; box-shadow:0 -10px 30px rgba(0,0,0,.2); }
+  .sheet.show{ transform:translateY(0); }
+  /* Keep sheet header language toggle always tappable above chat content */
+  .sheet-header{ position:relative; z-index:2; }
+  .sheet-header-actions .lang-toggle{ position:relative; z-index:3; }
+  .sheet-handle{ width:40px; height:4px; background:#DDD; border-radius:3px; margin:10px auto 4px; flex-shrink:0; }
+  .sheet-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 14px 12px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .sheet-header .who{ display:flex; align-items:center; gap:9px; min-width:0; flex:1; }
+  .sheet-avatar{ width:34px; height:34px; border-radius:50%; background:var(--jc-red); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+  .sheet-header h3{ margin:0; font-size:14px; line-height:1.25; display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+  .sheet-header p{ margin:2px 0 0; font-size:11px; color:var(--muted); font-weight:500; line-height:1.35; }
+  .sheet-close{ width:30px; height:30px; border-radius:50%; background:#F5F5F6; border:none; font-size:14px; cursor:pointer; color:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sheet-close svg{ width:14px; height:14px; }
+  .sheet-header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .lang-toggle{ display:flex; background:#F2F2F4; border-radius:999px; padding:3px; gap:2px; border:1px solid var(--line); }
+  .lang-toggle button{ border:none; background:transparent; border-radius:999px; padding:6px 10px; font-size:11px; font-weight:800; font-family:var(--font); color:var(--muted); cursor:pointer; line-height:1; position:relative; z-index:2; -webkit-tap-highlight-color:transparent; }
+  .lang-toggle button.active{ background:var(--jc-red); color:#fff; box-shadow:0 2px 6px rgba(166,8,28,.25); }
+  .lang-toggle button[data-lang="urdu"]{ font-family:'Noto Nastaliq Urdu',Inter,sans-serif; font-size:11px; }
+  .header-lang{ position:relative; z-index:5; flex-shrink:0; }
+  .ai-badge{ font-size:10px; font-weight:700; color:var(--jc-red-dark); background:var(--jc-red-tint); padding:2px 8px; border-radius:999px; white-space:nowrap; }
+
+  .chat-log{ flex:1; min-height:0; overflow-y:auto; padding:14px 14px 8px; display:flex; flex-direction:column; gap:10px; }
+  .chat-log::-webkit-scrollbar{ display:none; }
+  .msg-row{ display:flex; gap:8px; width:100%; max-width:100%; align-items:flex-start; box-sizing:border-box; }
+  .msg-row.user{ justify-content:flex-end; }
+  .msg-row.assistant{ justify-content:flex-start; }
+  .msg-avatar{ width:26px; height:26px; border-radius:50%; background:var(--jc-red); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .msg-body{ display:flex; flex-direction:column; align-items:stretch; gap:8px; flex:1; min-width:0; max-width:calc(100% - 34px); }
+  .msg-row.user .msg-body{ flex:0 1 auto; max-width:82%; align-items:flex-end; }
+  .bubble{ width:fit-content; max-width:100%; padding:10px 13px; border-radius:15px; font-size:13px; line-height:1.5; word-break:break-word; box-sizing:border-box; }
+  .msg-row.assistant .bubble{ background:#F2F2F4; border-top-left-radius:4px; align-self:flex-start; }
+  .msg-row.assistant .bubble b{ color:var(--jc-red-dark); }
+  .msg-row.user .bubble{ background:var(--jc-red); color:#fff; border-top-right-radius:4px; max-width:100%; }
+  .proactive-tag, .heal-tag{ font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:20px; display:inline-block; letter-spacing:.02em; align-self:flex-start; }
+  .proactive-tag{ color:var(--jc-red-dark); background:var(--jc-red-tint); }
+  .heal-tag{ color:var(--heal-dark); background:var(--heal-tint); }
+
+  .inline-chip-row{ display:flex; flex-wrap:wrap; gap:7px; width:100%; max-width:100%; margin:0; padding:0; box-sizing:border-box; align-items:stretch; }
+  .inline-chip{ background:#fff; border:1.5px solid var(--jc-red); color:var(--jc-red-dark); border-radius:14px; padding:8px 13px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); white-space:normal; overflow-wrap:anywhere; word-break:break-word; text-align:center; line-height:1.25; min-height:34px; max-width:100%; flex:0 1 auto; box-sizing:border-box; }
+  .inline-chip:hover{ background:var(--jc-red-tint); }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px; width:100%; max-width:100%; font-size:12.5px; box-sizing:border-box; align-self:stretch; }
+  .card-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:6px 0; font-size:12.5px; }
+  .card-row .k{ color:var(--jc-gold-dark); font-weight:600; flex:1; min-width:0; line-height:1.4; }
+  .card-row .v{ font-weight:700; text-align:right; flex-shrink:0; line-height:1.4; }
+  .card-title{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .card-title > div:last-child{ min-width:0; flex:1; }
+  .card-title .av{ width:34px; height:34px; border-radius:50%; background:var(--jc-gold-tint); color:var(--jc-gold-dark); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0; overflow:hidden; }
+  .card-title .av svg{ width:16px; height:16px; display:block; }
+  .card-title b{ font-size:13.5px; display:block; line-height:1.3; }
+  .card-title small{ color:var(--success); font-size:11px; font-weight:600; display:block; line-height:1.35; margin-top:2px; }
+  .card hr{ border:none; border-top:1px dashed var(--line); margin:8px 0; }
+  .flag{ background:var(--warn-tint); color:#8a6100; font-size:11px; font-weight:600; padding:6px 9px; border-radius:9px; margin:8px 0; }
+  .btn-row{ display:flex; gap:8px; margin-top:11px; min-width:0; width:100%; align-items:stretch; }
+  @media (max-width:360px){ .btn-row{ flex-direction:column; } }
+  .btn{ flex:1 1 0; min-width:0; min-height:38px; padding:9px 12px; border-radius:14px; font-size:12.5px; font-weight:700; border:none; cursor:pointer; font-family:var(--font); white-space:normal; overflow-wrap:anywhere; word-break:break-word; text-align:center; line-height:1.25; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; }
+  .btn.primary{ background:var(--jc-red); color:#fff; }
+  .btn.primary:hover{ background:var(--jc-red-dark); }
+  .btn.outline{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+  .btn.outline:hover{ background:#F7F7F8; }
+  .fund-option{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border:1.5px solid var(--line); border-radius:11px; margin-bottom:7px; font-size:12px; box-sizing:border-box; }
+  .fund-option.best{ border-color:var(--jc-red); background:var(--jc-red-tint); }
+  .fund-option .tag{ font-size:9.5px; font-weight:800; color:var(--jc-red-dark); }
+  .success-box{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:14px 8px 6px; width:100%; box-sizing:border-box; }
+  .success-check{ width:44px; height:44px; border-radius:50%; background:var(--success-tint); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:4px; }
+  .promo-code{ margin-top:8px; background:var(--ink); color:var(--jc-gold); font-weight:800; letter-spacing:.06em; text-align:center; padding:9px 0; border-radius:9px; font-size:13.5px; }
+
+  .chip-row{ display:flex; gap:7px; flex-wrap:nowrap; overflow-x:auto; padding:10px 14px; border-top:1px solid var(--line); flex-shrink:0; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .chip-row::-webkit-scrollbar{ display:none; }
+  .chip{ background:#F2F2F4; border:1px solid var(--line); border-radius:14px; padding:8px 12px; font-size:11.5px; font-weight:600; cursor:pointer; color:var(--ink); white-space:nowrap; flex-shrink:0; line-height:1.25; min-height:34px; }
+  .chip:hover{ background:#E9E9EB; }
+
+  .composer{ display:flex; align-items:center; gap:8px; padding:10px 14px 16px; flex-shrink:0; }
+  .composer input{ flex:1; min-width:0; border:1px solid var(--line); background:#F7F7F8; border-radius:22px; padding:11px 16px; font-size:13px; font-family:var(--font); outline:none; }
+  .composer input:focus{ border-color:var(--jc-red); }
+  .composer button{ width:40px; height:40px; border-radius:50%; background:var(--jc-red); color:#fff; border:none; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .composer button svg{ width:17px; height:17px; }
+  .composer button:disabled{ opacity:.45; cursor:not-allowed; }
+
+  .msg-body .inline-chip-row, .msg-body .card{ margin:0; max-width:100%; }
+  .chat-log > .inline-chip-row{ margin-left:34px; width:calc(100% - 34px); max-width:calc(100% - 34px); }
+
+  body.lang-urdu .phone,
+  body.lang-urdu .caption{ font-family:'Noto Nastaliq Urdu',Inter,sans-serif; }
+  body.lang-urdu .quick-item span,
+  body.lang-urdu .section-label,
+  body.lang-urdu .list-tip,
+  body.lang-urdu .tab,
+  body.lang-urdu .balance-label,
+  body.lang-urdu .home-loan-title b,
+  body.lang-urdu .home-loan-title span,
+  body.lang-urdu .home-loan-status,
+  body.lang-urdu .home-loan-foot,
+  body.lang-urdu .txn-status,
+  body.lang-urdu .toast span,
+  body.lang-urdu .toast b{ line-height:1.55; }
+  #sheet.chat-urdu .bubble,
+  #sheet.chat-urdu .chip,
+  #sheet.chat-urdu .inline-chip,
+  #sheet.chat-urdu .card,
+  #sheet.chat-urdu .sheet-header h3,
+  #sheet.chat-urdu .sheet-header p,
+  #sheet.chat-urdu .card-row .k,
+  #sheet.chat-urdu .card-title b,
+  #sheet.chat-urdu .loan-note{ font-family:'Noto Nastaliq Urdu',Inter,sans-serif; line-height:1.65; }
+  #sheet.chat-urdu .msg-row.assistant .bubble,
+  #sheet.chat-urdu .card-row .k,
+  #sheet.chat-urdu .card-title b{ text-align:right; direction:rtl; }
+  #sheet.chat-urdu .card-row{ flex-direction:row-reverse; }
+  #sheet.chat-urdu .inline-chip-row{ justify-content:flex-end; }
+
+  .typing{ display:flex; gap:4px; padding:4px 6px; }
+  .typing span{ width:6px; height:6px; background:#B9B9BD; border-radius:50%; animation:blink 1.2s infinite ease-in-out; }
+  .typing span:nth-child(2){ animation-delay:.2s; }
+  .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,80%,100%{ opacity:.3; } 40%{ opacity:1; } }
+
+  /* ---------- profile screen ---------- */
+  .profile-user{ margin:0 20px 14px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:13px; display:flex; align-items:center; gap:12px; }
+  .profile-avatar{ width:44px; height:44px; border-radius:50%; background:var(--jc-gold); color:#4A3300; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; flex-shrink:0; }
+  .profile-user b{ font-size:14.5px; display:block; }
+  .profile-user span{ font-size:11.5px; color:var(--muted); }
+  .stat-row{ display:flex; gap:10px; margin:0 20px 14px; }
+  .stat-card{ flex:1; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px; }
+  .stat-card .lbl{ font-size:11px; color:var(--muted); margin-bottom:4px; }
+  .stat-card .val{ font-size:15.5px; font-weight:800; }
+  .action-row{ margin:0 20px 10px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:13px 15px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .action-row:hover{ background:#FAFAFA; }
+  .action-row .aicon{ width:22px; height:22px; flex-shrink:0; }
+  .action-row span{ font-size:13px; font-weight:600; }
+
+  .caption{ text-align:center; font-size:11.5px; color:var(--muted); max-width:390px; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<script>
+/* ============================================================
+   ICON LIBRARY (inline SVG, stroke-based, matches reference UI)
+   ============================================================ */
+const ICONS = {
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+  bill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l3 3v17l-3-2-3 2-3-2-3 2V2z"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg>',
+  topup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>',
+  addmoney: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
+  recovery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="19.1" x2="19.1" y2="4.9"/></svg>',
+  arrowUpRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>',
+  arrowDownLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>',
+  profile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>',
+  card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09c0 .68.39 1.29 1 1.51.61.23 1.32.11 1.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06c-.44.5-.56 1.21-.33 1.82.23.61.83 1 1.51 1H21a2 2 0 110 4h-.09c-.68 0-1.29.39-1.51 1z"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  send2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+};
+document.write(`
+<div class="layout">
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="toast" id="toast"></div>
+    <div class="status-row"><span id="clock">9:41</span><span>\u{1F50B} 100%</span></div>
+
+    <div class="screens">
+
+      <!-- HOME -->
+      <div class="screen active" id="screen-home">
+        <div class="app-header">
+          <div class="brand">
+            <img src="https://www.jazzcash.com.pk/assets/svgs/JazzCash-logo-hd-80.svg" alt="JazzCash" id="logo-home" onerror="logoFallback(this,'brand-fallback')">
+            <span class="brand-fallback" id="brand-fallback" style="display:none;"><span class="jazz">Jazz</span><span class="cash">Cash</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="lang-toggle header-lang" id="app-lang-toggle" role="group" aria-label="App language">
+              <button type="button" data-lang="english" class="active" onclick="setAppLanguage('english')">EN</button>
+              <button type="button" data-lang="urdu" onclick="setAppLanguage('urdu')">اردو</button>
+            </div>
+            <button class="icon-btn" onclick="showScreen('profile')">${ICONS.profile}</button>
+          </div>
+        </div>
+
+        <div class="balance-card">
+          <div class="balance-label" data-i18n="available_balance">Available balance</div>
+          <div class="balance-amount" id="balance-amount">Rs. 0</div>
+          <div class="balance-row">
+            <button class="add-money-btn" onclick="openAssistant('addmoney')" data-i18n="add_money_btn">+ Add Money</button>
+            <span class="masked-card-text" id="masked-card">JazzCash Wallet · \u2022\u2022\u2022\u2022 0000</span>
+          </div>
+        </div>
+
+        <div class="nudge-banner" id="home-nudge" onclick="openNudgeFromBanner()">
+          <div class="ic">\u{1F514}</div>
+          <div class="txt"><b id="nudge-title"></b><span id="nudge-sub"></span></div>
+        </div>
+
+        <div id="home-loan-card" class="home-loan-card" onclick="openAssistant('loan')">
+          <div class="home-loan-top">
+            <div class="home-loan-title">
+              <div class="home-loan-icon">💳</div>
+              <div><b data-i18n="loan_card_title">Loan payment plan</b><span id="home-loan-plan-name">Current plan</span></div>
+            </div>
+            <div class="home-loan-status" id="home-loan-status">On Track</div>
+          </div>
+          <div class="home-loan-main">
+            <div><div class="amt" id="home-loan-installment">Rs. 0</div><div class="meta" id="home-loan-due">Next payment</div></div>
+            <div class="home-loan-arrow">›</div>
+          </div>
+          <div class="home-loan-progress"><div id="home-loan-progress-bar" style="width:0%"></div></div>
+          <div class="home-loan-foot"><span id="home-loan-remaining">0 payments remaining</span><span id="home-loan-outstanding">Rs. 0 outstanding</span></div>
+        </div>
+
+        <div class="quick-row">
+          <div class="quick-item" onclick="openAssistant('send')"><div class="quick-icon">${ICONS.send}</div><span data-i18n="qi_send">Send</span></div>
+          <div class="quick-item" onclick="openAssistant('bill')"><div class="quick-icon">${ICONS.bill}</div><span data-i18n="qi_bills">Bills</span></div>
+          <div class="quick-item" onclick="openAssistant('topup')"><div class="quick-icon">${ICONS.topup}</div><span data-i18n="qi_topup">Top-Up</span></div>
+          <div class="quick-item" onclick="openAssistant('addmoney')"><div class="quick-icon">${ICONS.addmoney}</div><span data-i18n="qi_addmoney">Add Money</span></div>
+          <div class="quick-item" onclick="openAssistant('recovery')"><div class="quick-icon">${ICONS.recovery}</div><span data-i18n="qi_recovery">Recovery</span></div>
+        </div>
+
+        <div class="offers-wrap">
+          <div class="section-label"><span data-i18n="for_you">\u2728 For You</span></div>
+          <div class="offers-scroll" id="offers-scroll"></div>
+        </div>
+
+        <div class="section-label"><span data-i18n="recent_activity">Recent activity</span><a href="#" onclick="showScreen('history'); return false;" data-i18n="see_all">See all</a></div>
+        <div id="home-txns" class="txn-list"></div>
+        <div class="list-tip" data-i18n="list_tip">Tip: tap the failed payment to let the assistant recover it.</div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="screen" id="screen-history">
+        <div class="app-header"><div class="brand"><span class="brand-fallback" style="display:block;" data-i18n="txn_history">Transaction History</span></div></div>
+        <div id="history-txns" class="txn-list"></div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="screen" id="screen-profile">
+        <div class="app-header"><div class="brand"><span class="brand-fallback" style="display:block;" data-i18n="profile">Profile</span></div></div>
+        <div class="profile-user">
+          <div class="profile-avatar" id="profile-initials">--</div>
+          <div><b id="profile-name">\u2014</b><span id="profile-phone">\u2014</span></div>
+        </div>
+        <div class="balance-card" style="margin:0 20px 14px;">
+          <div class="balance-label" data-i18n="wallet_balance">Wallet balance</div>
+          <div class="balance-amount" id="profile-balance" style="margin-bottom:0;">Rs. 0</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="lbl" data-i18n="total_sent">Total sent</div><div class="val" id="stat-sent">Rs. 0</div></div>
+          <div class="stat-card"><div class="lbl" data-i18n="total_received">Total received</div><div class="val" id="stat-received">Rs. 0</div></div>
+        </div>
+        <div class="action-row" onclick="profileToast(t('toast_security'))"><span class="aicon" style="color:var(--jc-red);">${ICONS.shield}</span><span data-i18n="security_pin">Security & PIN</span></div>
+        <div class="action-row" onclick="profileToast(t('toast_linked'))"><span class="aicon" style="color:var(--jc-red);">${ICONS.card}</span><span data-i18n="linked_accounts">Linked accounts</span></div>
+        <div class="action-row" onclick="profileToast(t('toast_settings'))"><span class="aicon" style="color:#C88A00;">${ICONS.gear}</span><span data-i18n="app_settings">App settings</span></div>
+        <div class="caption" style="text-align:left; margin:16px 20px 10px;" data-i18n="profile_caption">Conversational prototype for the JazzCash CX 4.0 pitch. Names, balances and bills are randomly generated demo data.</div>
+        <button class="btn outline" style="margin:0 20px; width:calc(100% - 40px);" onclick="regenerateData()" data-i18n="regenerate">\u{1F504} Regenerate demo data</button>
+      </div>
+
+    </div>
+
+    <button class="fab" onclick="openAssistant()">${ICONS.chat}</button>
+
+    <div class="tabbar">
+      <button class="tab active" data-tab="home" onclick="showScreen('home')">${ICONS.home}<span data-i18n="tab_home">Home</span></button>
+      <button class="tab" data-tab="assistant" onclick="openAssistant()">${ICONS.chat}<span class="tab-dot" id="tab-dot"></span><span data-i18n="tab_assistant">Assistant</span></button>
+      <button class="tab" data-tab="history" onclick="showScreen('history')">${ICONS.clock}<span data-i18n="tab_history">History</span></button>
+      <button class="tab" data-tab="profile" onclick="showScreen('profile')">${ICONS.profile}<span data-i18n="tab_profile">Profile</span></button>
+    </div>
+
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeAssistant()"></div>
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="who">
+          <div class="sheet-avatar">JC</div>
+          <div><h3><span data-i18n-chat="assistant_title">JazzCash Assistant</span> <span class="ai-badge" data-i18n-chat="live_ai">LIVE AI</span></h3><p data-i18n-chat="assistant_sub">Always on \u00B7 Secure \u00B7 Powered by Gemma</p></div>
+        </div>
+        <div class="sheet-header-actions">
+          <div class="lang-toggle" id="chat-lang-toggle" role="group" aria-label="Chat reply language">
+            <button type="button" data-lang="english" class="active" onclick="setChatLanguage('english')">EN</button>
+            <button type="button" data-lang="urdu" onclick="setChatLanguage('urdu')">اردو</button>
+          </div>
+          <button class="sheet-close" onclick="closeAssistant()">${ICONS.close}</button>
+        </div>
+      </div>
+      <div class="chat-log" id="chat-log"></div>
+      <div class="chip-row">
+        <div class="chip" onclick="quickStart('send')" data-i18n-chat="chip_send">Send Money</div>
+        <div class="chip" onclick="quickStart('bill')" data-i18n-chat="chip_bill">Pay a Bill</div>
+        <div class="chip" onclick="quickStart('topup')" data-i18n-chat="chip_topup">Top-Up</div>
+        <div class="chip" onclick="quickStart('addmoney')" data-i18n-chat="chip_addmoney">Add Money</div>
+        <div class="chip" onclick="quickStart('recovery')" data-i18n-chat="chip_recovery">Failed Payment</div>
+        <div class="chip" onclick="quickStart('loan')" data-i18n-chat="chip_loan">Loan Repayment</div>
+      </div>
+      <div class="composer">
+        <input type="text" id="chat-input" placeholder="Try: Send Ahmed 5,000" onkeydown="if(event.key==='Enter')handleComposerSend();">
+        <button onclick="handleComposerSend()">${ICONS.send2}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <div><b>PROTOTYPE</b><span class="demo-hint">CX 4.0 Engagement Console</span></div>
+    <div class="demo-actions">
+      <button class="demo-btn" onclick="regenerateData()">\u{1F504} New demo data</button>
+    </div>
+    <div class="demo-actions">
+      <div style="font-size:11px; color:#ADADB2; margin:4px 0 -2px;">Trigger a Proactive Engagement Event</div>
+      <button class="demo-btn" id="nb-bill" onclick="fireNudge('bill')">\u{1F9FE} Event-Driven Engagement</button>
+      <button class="demo-btn" id="nb-topup" onclick="fireNudge('topup')">\u{1F4F6} Predictive Engagement</button>
+      <button class="demo-btn" id="nb-recovery" onclick="fireNudge('recovery')">\u26A0\uFE0F Real-Time Service Recovery</button>
+      <button class="demo-btn" id="nb-offer" onclick="fireNudge('offer')">\u{1F381} Hyper-Personalized Engagement</button>
+      <button class="demo-btn" id="nb-heal" onclick="fireNudge('selfheal')">\u{1FA7A} Autonomous Self-Healing</button>
+      <button class="demo-btn" id="nb-loan" onclick="fireNudge('loan')">💳 Proactive Repayment Journey Management</button>
+    </div>
+    <div class="demo-hint">Engagement events are manually initiated, not automated — trigger each scenario on cue without overlapping in-session flows.</div>
+  </div>
+
+</div>
+`);
+</script>
+
+  <div class="caption">Conversational prototype for the JazzCash CX 4.0 pitch · Names, amounts, and due dates are generated randomly — use "New demo data" to reshuffle.</div>
+
+<script>
+/* ============================================================
+   LOGO FALLBACK
+   ============================================================ */
+const LOGO_SOURCES = [
+  "https://www.jazzcash.com.pk/assets/svgs/JazzCash-logo-hd-80.svg",
+  "https://en.wikipedia.org/wiki/Special:FilePath/JazzCash_logo_(2025).png"
+];
+function logoFallback(img, textFallbackId){
+  const tried = parseInt(img.dataset.tried || "0", 10);
+  const next = tried + 1;
+  if(next < LOGO_SOURCES.length){ img.dataset.tried = String(next); img.src = LOGO_SOURCES[next]; return; }
+  img.style.display = "none";
+  if(textFallbackId){ const t = document.getElementById(textFallbackId); if(t) t.style.display = "block"; }
+}
+
+/* ============================================================
+   DATA MODEL — everything below is generated, not hardcoded
+   ============================================================ */
+const FIRST_NAMES = ["Ahmed","Bilal","Sana","Ayesha","Usman","Hina","Fahad","Mariam","Tariq","Zara","Kamran","Nida","Hassan","Farah","Naveed","Sadia","Rubaisha","Danish"];
+const LAST_NAMES  = ["Khan","Malik","Raza","Siddiqui","Iqbal","Sheikh","Butt","Chaudhry","Rehman","Farooq"];
+const BILLERS = [
+  {name:"K-Electric", kind:"Electricity"}, {name:"SSGC", kind:"Gas"},
+  {name:"PTCL", kind:"Internet"}, {name:"Jazz Postpaid", kind:"Mobile"},
+];
+const PACKAGES = [
+  {name:"Weekly Super Card", data:"6GB", mins:"1000 min", price:300},
+  {name:"Monthly Super Duper", data:"24GB", mins:"3000 min", price:1000},
+  {name:"Daily Basic Card", data:"1GB", mins:"100 min", price:50},
+];
+const MERCHANTS = ["Careem Ride","Foodpanda Order","Daraz Purchase","Bykea Ride","Cheezious Order"];
+const COMPANIES = ["Systems Ltd","Textiles Pvt Ltd","Solutions Inc","Traders Co","Logistics Ltd"];
+const OFFER_POOL = [
+  {merchant:"KFC", ico:"\u{1F357}", discounts:["25% off your next order","Free regular fries on orders over Rs. 800","Buy 1 Get 1 on Zinger Burger"], reasons:["Because you often order after a Careem ride","Based on your weekend food spending","You haven't ordered in a while"]},
+  {merchant:"Foodpanda", ico:"\u{1F6F5}", discounts:["Free delivery for a week","20% off your next 2 orders","Rs. 300 off orders over Rs. 1,500"], reasons:["Your last order was 12 days ago","You're a frequent evening orderer","Because you pay with JazzCash often"]},
+  {merchant:"Daraz", ico:"\u{1F6CD}\uFE0F", discounts:["Rs. 500 cashback over Rs. 3,000","10% off electronics this week","Free shipping voucher"], reasons:["Based on your recent browsing pattern","JazzCash Daraz Wallet bonus this month","You shopped here last quarter"]},
+  {merchant:"Careem", ico:"\u{1F697}", discounts:["30% off your next 3 rides","Rs. 150 ride credit","Free ride upgrade to Business"], reasons:["You ride often on weekday mornings","Because your last ride payment failed","Loyalty reward for frequent riders"]},
+];
+
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function pick(arr){ return arr[randInt(0,arr.length-1)]; }
+function fmt(n){ return "Rs. " + Math.round(n).toLocaleString("en-PK"); }
+function initials(name){ return name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase(); }
+function randomName(){ return pick(FIRST_NAMES) + " " + pick(LAST_NAMES); }
+function randomPhone(){ return "03" + randInt(10,49) + "-" + randInt(1000000,9999999); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function promoCode(){ return "JC" + Math.random().toString(36).slice(2,7).toUpperCase(); }
+
+let state = {};
+
+function generateDemoData(){
+  const myName = randomName();
+  const kycLevel = pick([1,2,2,3]);
+
+  const usedFirst = new Set();
+  const contacts = [];
+  while(contacts.length < 6){
+    const c = { name: randomName(), phone: randomPhone() };
+    const first = c.name.split(" ")[0];
+    if(usedFirst.has(first)) continue;
+    usedFirst.add(first);
+    contacts.push(c);
+  }
+
+  const billers = BILLERS.map(b => ({ ...b, amount: randInt(1500,9800), increase: randInt(150,900), dueInDays: randInt(1,6) }));
+  const flaggedBiller = pick(billers);
+
+  const pkg = pick(PACKAGES);
+  const topupExpiresHours = randInt(6,30);
+
+  const balance = randInt(18000, 62000);
+  const last4 = String(randInt(1000,9999));
+
+  const failedMerchant = pick(MERCHANTS);
+  const failedAmount = randInt(500,4000);
+  const salaryCompany = pick(COMPANIES);
+
+  // Illustrative loan data for the prototype. Real fees/terms would come from the live lending system.
+  const loanOriginal = randInt(15000,80000);
+  const loanTermMonths = pick([3,6,9,12]);
+  const loanFactor = pick([1.06,1.08,1.10]);
+  const loanInstallment = Math.max(1000, Math.round((loanOriginal*loanFactor/loanTermMonths)/100)*100);
+  const loanPaid = randInt(0, Math.max(0,loanTermMonths-1));
+  const loanRemaining = Math.max(1,loanTermMonths-loanPaid);
+  const loanOutstanding = Math.max(0,loanRemaining*loanInstallment);
+  const loanStatus = pick(["On Track","On Track","Due Soon","Due Today","Behind"]);
+  const loanOverdueDays = loanStatus==="Behind" ? randInt(2,18) : 0;
+  const loanLateFee = loanStatus==="Behind" ? randInt(100,500) : 0;
+  const loanDue = loanStatus==="Due Today"
+    ? Date.now()+randInt(1,12)*60*60*1000
+    : loanStatus==="Behind"
+      ? Date.now()-loanOverdueDays*24*60*60*1000
+      : Date.now()+randInt(1,5)*24*60*60*1000;
+  const loan = { original:loanOriginal, termMonths:loanTermMonths, paid:loanPaid, remaining:loanRemaining, installment:loanInstallment, outstanding:loanOutstanding, status:loanStatus, overdueDays:loanOverdueDays, lateFee:loanLateFee, due:loanDue, selectedPlan:null, reminder:null };
+
+  const offers = [OFFER_POOL[0], OFFER_POOL[1], OFFER_POOL[2], OFFER_POOL[3]]
+    .sort(()=>Math.random()-0.5).slice(0,3)
+    .map(o => ({ merchant:o.merchant, ico:o.ico, discount: pick(o.discounts), reason: pick(o.reasons) }));
+
+  state = {
+    myName, myPhone: randomPhone(), last4, kycLevel,
+    balance, contacts, billers, flaggedBiller,
+    pkg, topupExpiresHours, offers,
+    totalSent: randInt(4000,15000), totalReceived: randInt(20000,60000),
+    fundOptions: [
+      {name:"Bank Transfer", fee:0, mins:"2-5 min"},
+      {name:"Debit/Credit Card", fee:randInt(40,80), mins:"instant"},
+      {name:"Agent Cash-In", fee:randInt(20,50), mins:"instant"},
+    ],
+    failedTxn: { title: failedMerchant, amount: failedAmount, deducted:false },
+    loan,
+    txns: [
+      {type:"merchant", title:failedMerchant, sub:"Merchant payment", when:"Today, "+pad(randInt(7,11))+":"+pad(randInt(0,59)), amount:failedAmount, sign:"-", ok:false, hint:"Tap for help"},
+      {type:"bill", title:flaggedBiller.name+" Bill", sub:"Utility payment", when:"Today, "+pad(randInt(7,11))+":"+pad(randInt(0,59)), amount:randInt(1500,9000), sign:"-", ok:true},
+      {type:"credit", title:"Salary — "+salaryCompany, sub:"Bank transfer in", when:"Yesterday, "+pad(randInt(15,19))+":"+pad(randInt(0,59)), amount:randInt(35000,90000), sign:"+", ok:true},
+      {type:"topup", title:pkg.name, sub:"Mobile top-up", when:pick(["Mon","Tue","2 days ago"])+", "+pad(randInt(9,13))+":"+pad(randInt(0,59)), amount:pkg.price, sign:"-", ok:true},
+    ],
+    badge: 0,
+    convo: { pendingOptions: [], pendingResolver: null, pendingTextResolver: null, chipRowCounter: 0 },
+  };
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+function renderAll(){
+  document.getElementById("balance-amount").textContent = fmt(state.balance);
+  document.getElementById("profile-name").textContent = state.myName;
+  document.getElementById("profile-initials").textContent = initials(state.myName);
+  document.getElementById("profile-balance").textContent = fmt(state.balance);
+  document.getElementById("stat-sent").textContent = fmt(state.totalSent);
+  document.getElementById("stat-received").textContent = fmt(state.totalReceived);
+  renderTxns();
+  renderOffers();
+  renderHomeLoanCard();
+  applyAppLanguage();
+}
+
+function renderOffers(){
+  document.getElementById("offers-scroll").innerHTML = state.offers.map(o => `
+    <div class="offer-card">
+      <div class="row1"><div class="ico">${o.ico}</div><b>${o.merchant}</b></div>
+      <span class="disc">${o.discount}</span>
+      <div class="reason">${o.reason}</div>
+    </div>`).join("");
+}
+
+function renderHomeLoanCard(){
+  const card=document.getElementById("home-loan-card");
+  if(!card || !state.loan) return;
+  const l=state.loan;
+  const paidPct = l.original > 0 ? Math.min(100, Math.max(0, ((l.original - l.outstanding) / l.original) * 100)) : 0;
+  const statusEl=document.getElementById("home-loan-status");
+  const rawStatus=l.outstanding<=0 ? "Paid Off" : l.status;
+  const statusKey = ({
+    "Paid Off":"loan_paid_off","On Track":"status_on_track","Due Soon":"status_due_soon",
+    "Due Today":"status_due_today","Behind":"status_behind"
+  })[rawStatus] || "status_on_track";
+  statusEl.textContent=t(statusKey);
+  statusEl.className="home-loan-status" + ((rawStatus==="Behind") ? " danger" : ((rawStatus==="Due Today" || rawStatus==="Due Soon") ? " warning" : ""));
+  const planName=l.selectedPlan ? (l.selectedPlan.nameKey ? t(l.selectedPlan.nameKey) : l.selectedPlan.name) : t("loan_plan_current");
+  document.getElementById("home-loan-plan-name").textContent=planName;
+  document.getElementById("home-loan-installment").textContent=l.outstanding<=0 ? "Rs. 0" : fmt(l.installment);
+  document.getElementById("home-loan-due").textContent=l.outstanding<=0 ? t("loan_fully_repaid") : t("loan_next_payment", { due: loanDueText("app") });
+  document.getElementById("home-loan-progress-bar").style.width=paidPct.toFixed(1)+"%";
+  document.getElementById("home-loan-remaining").textContent=l.outstanding<=0 ? t("loan_no_remaining") : t("loan_remaining", { n: l.remaining });
+  document.getElementById("home-loan-outstanding").textContent=l.outstanding<=0 ? t("loan_fully_settled") : t("loan_outstanding", { amt: fmt(l.outstanding) });
+}
+
+const TYPE_ICON = {bill:"arrowUpRight", merchant:"arrowUpRight", topup:"arrowUpRight", send:"arrowUpRight", loan:"arrowUpRight", credit:"arrowDownLeft"};
+function txnRow(txn){
+  const clickAttr = (!txn.ok) ? "startRecoveryFor(event)" : "";
+  const iconKey = TYPE_ICON[txn.type] || "arrowUpRight";
+  const iconClass = !txn.ok ? "fail" : (txn.sign==="+" ? "credit" : "");
+  const amtClass = !txn.ok ? "fail" : (txn.sign==="+" ? "credit" : "debit");
+  const statusLabel = txn.ok ? t("status_ok") : t("status_fail");
+  const hint = txn.hint ? t("hint_help") : "";
+  return `<div class="txn ${!txn.ok?'is-fail':''}" onclick="${clickAttr}">
+    <div class="txn-icon ${iconClass}">${ICONS[iconKey]}</div>
+    <div class="txn-body">
+      <div class="txn-title">${txn.title}</div>
+      <div class="txn-sub">${txn.sub} · ${txn.when}</div>
+      ${hint ? `<div class="txn-hint">${hint}</div>` : ""}
+    </div>
+    <div>
+      <div class="txn-amt ${amtClass}">${txn.sign}${fmt(txn.amount)}</div>
+      <div class="txn-status ${txn.ok?'ok':'bad'}">${statusLabel}</div>
+    </div>
+  </div>`;
+}
+function renderTxns(){
+  document.getElementById("home-txns").innerHTML = state.txns.slice(0,4).map(txnRow).join("");
+  document.getElementById("history-txns").innerHTML = state.txns.map(txnRow).join("");
+}
+function startRecoveryFor(ev){ if(ev) ev.stopPropagation(); openAssistant('recovery'); }
+function profileToast(msg){ showToast(msg); }
+
+let currentMainScreen = "home";
+function showScreen(name){
+  currentMainScreen = name;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+name).classList.add("active");
+  updateTabHighlight(name);
+}
+function updateTabHighlight(key){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===key));
+}
+
+function regenerateData(){
+  generateDemoData();
+  renderAll();
+  document.getElementById("chat-log").innerHTML = "";
+  seedGreeting();
+  hideNudgeBanner();
+  updateBadge(0);
+}
+
+/* ============================================================
+   ASSISTANT SHEET
+   ============================================================ */
+function openAssistant(intent){
+  document.getElementById("sheet-overlay").classList.add("show");
+  document.getElementById("sheet").classList.add("show");
+  updateTabHighlight("assistant");
+  updateBadge(0);
+  hideNudgeBanner();
+  if(intent) setTimeout(()=>quickStart(intent), 250);
+}
+function closeAssistant(){
+  document.getElementById("sheet-overlay").classList.remove("show");
+  document.getElementById("sheet").classList.remove("show");
+  updateTabHighlight(currentMainScreen);
+}
+
+/* ---------- chat plumbing ---------- */
+function scrollChat(){ const log=document.getElementById("chat-log"); log.scrollTop = log.scrollHeight; }
+function addUser(text){
+  document.getElementById("chat-log").insertAdjacentHTML("beforeend",
+    `<div class="msg-row user"><div class="msg-body"><div class="bubble">${text}</div></div></div>`);
+  scrollChat();
+}
+function addAssistantHTML(html, tagType){
+  const tag = tagType==="proactive" ? `<div class="proactive-tag">${tc("proactive_tag")}</div>`
+            : tagType==="heal" ? `<div class="heal-tag">${tc("heal_tag")}</div>` : "";
+  // Auto-wrap plain text into a bubble
+  let body = html;
+  if(typeof html === "string" && !/<(div|button|span)\b/i.test(html.trim().slice(0,20)) && !html.trim().startsWith("<")){
+    body = `<div class="bubble">${html}</div>`;
+  }
+  document.getElementById("chat-log").insertAdjacentHTML("beforeend",
+    `<div class="msg-row assistant"><div class="msg-avatar">JC</div><div class="msg-body">${tag}${body}</div></div>`);
+  scrollChat();
+}
+function addTyping(){
+  document.getElementById("chat-log").insertAdjacentHTML("beforeend",
+    `<div class="msg-row assistant" id="typing-row"><div class="msg-avatar">JC</div><div class="msg-body"><div class="bubble typing"><span></span><span></span><span></span></div></div></div>`);
+  scrollChat();
+}
+function removeTyping(){ const t=document.getElementById("typing-row"); if(t) t.remove(); }
+function afterDelay(fn){ addTyping(); setTimeout(()=>{ removeTyping(); fn(); }, 500 + Math.random()*250); }
+
+function seedGreeting(){
+  const name = state.myName.split(" ")[0];
+  addAssistantHTML(`<div class="bubble">${tc("greeting", { name })}</div>`);
+}
+
+/* ---------- conversational question helpers ---------- */
+function askChips(promptHTML, options, resolver){
+  addAssistantHTML(`<div class="bubble">${promptHTML}</div>`);
+  state.convo.chipRowCounter++;
+  const rid = "chiprow" + state.convo.chipRowCounter;
+  state.convo.pendingOptions = options;
+  state.convo.pendingResolver = resolver;
+  const chipsHtml = options.map((o,i)=>`<button class="inline-chip" onclick="pickOption(${i},'${rid}')">${o.label}</button>`).join("");
+  const bodies = document.querySelectorAll("#chat-log .msg-row.assistant .msg-body");
+  const last = bodies[bodies.length - 1];
+  if(last) last.insertAdjacentHTML("beforeend", `<div class="inline-chip-row" id="${rid}">${chipsHtml}</div>`);
+  else addAssistantHTML(`<div class="inline-chip-row" id="${rid}">${chipsHtml}</div>`);
+  scrollChat();
+}
+function pickOption(i, rid){
+  const opt = state.convo.pendingOptions[i];
+  if(!opt) return;
+  const row = document.getElementById(rid);
+  if(row) row.remove();
+  addUser(opt.label);
+  const resolver = state.convo.pendingResolver;
+  state.convo.pendingOptions = []; state.convo.pendingResolver = null;
+  if(resolver) afterDelay(()=>resolver(opt));
+}
+function askText(promptHTML, resolver, placeholder){
+  addAssistantHTML(`<div class="bubble">${promptHTML}</div>`);
+  state.convo.pendingTextResolver = resolver;
+  const input = document.getElementById("chat-input");
+  if(placeholder) input.placeholder = placeholder;
+  input.focus();
+}
+function resetTextPlaceholder(){
+  const input = document.getElementById("chat-input");
+  if(input) input.placeholder = tc("placeholder");
+}
+
+/* ============================================================
+   TWO LANGUAGE CONTROLS
+   - jcAppLanguage  → home toggle → entire app UI
+   - jcChatLanguage → chat toggle → chat chrome + LLM replies
+   ============================================================ */
+const API_BASE = (window.JC_API_BASE || "").replace(/\/$/, "") || "";
+let jcSessionId = null;
+let jcChatBusy = false;
+let jcAppLanguage = localStorage.getItem("jc_app_language") || "english";
+let jcChatLanguage = localStorage.getItem("jc_chat_language") || localStorage.getItem("jc_reply_language") || "english";
+// back-compat alias used in a few places
+let jcReplyLanguage = jcChatLanguage;
+
+const I18N = {
+  english: {
+    available_balance: "Available balance",
+    add_money_btn: "+ Add Money",
+    wallet_label: "JazzCash Wallet",
+    qi_send: "Send", qi_bills: "Bills", qi_topup: "Top-Up", qi_addmoney: "Add Money", qi_recovery: "Recovery",
+    for_you: "✨ For You", recent_activity: "Recent activity", see_all: "See all",
+    list_tip: "Tip: tap the failed payment to let the assistant recover it.",
+    txn_history: "Transaction History", profile: "Profile", wallet_balance: "Wallet balance",
+    total_sent: "Total sent", total_received: "Total received",
+    security_pin: "Security & PIN", linked_accounts: "Linked accounts", app_settings: "App settings",
+    profile_caption: "Conversational prototype for the JazzCash CX 4.0 pitch. Names, balances and bills are randomly generated demo data.",
+    regenerate: "🔄 Regenerate demo data",
+    tab_home: "Home", tab_assistant: "Assistant", tab_history: "History", tab_profile: "Profile",
+    loan_card_title: "Loan payment plan",
+    loan_plan_current: "Current repayment plan",
+    loan_paid_off: "Paid Off",
+    loan_fully_repaid: "Loan fully repaid",
+    loan_next_payment: "Next payment · {due}",
+    loan_remaining: "{n} payment(s) remaining",
+    loan_no_remaining: "No payments remaining",
+    loan_outstanding: "{amt} outstanding",
+    loan_fully_settled: "Fully settled",
+    status_ok: "Success", status_fail: "Failed", hint_help: "Tap for help",
+    verified_level: "Level {n} verified",
+    status_on_track: "On Track", status_due_soon: "Due Soon", status_due_today: "Due Today",
+    status_behind: "Behind",
+    toast_security: "🔒 Security & PIN settings would open here.",
+    toast_linked: "💳 Your linked bank accounts and cards would open here.",
+    toast_settings: "⚙️ App settings would open here.",
+    app_lang_note: "App language set to English.",
+    due_repaid: "loan fully repaid", due_overdue: "{n} day(s) overdue", due_today: "due today", due_in: "due in {n} day(s)",
+    plan_faster: "Faster payoff", plan_balanced: "Balanced", plan_lower: "Lower payments",
+  },
+  urdu: {
+    available_balance: "دستیاب بیلنس",
+    add_money_btn: "+ رقم شامل کریں",
+    wallet_label: "جازکیش والیٹ",
+    qi_send: "بھیجیں", qi_bills: "بلز", qi_topup: "ٹاپ اپ", qi_addmoney: "رقم شامل", qi_recovery: "بازیابی",
+    for_you: "✨ آپ کے لیے", recent_activity: "حالیہ سرگرمی", see_all: "سب دیکھیں",
+    list_tip: "ٹپ: ناکام ادائیگی پر ٹیپ کریں تاکہ اسسٹنٹ مدد کرے۔",
+    txn_history: "لین دین کی تاریخ", profile: "پروفائل", wallet_balance: "والیٹ بیلنس",
+    total_sent: "کل بھیجا گیا", total_received: "کل موصول",
+    security_pin: "سیکیورٹی اور پن", linked_accounts: "منسلک اکاؤنٹس", app_settings: "ایپ سیٹنگز",
+    profile_caption: "جازکیش CX 4.0 پروٹوٹائپ۔ نام، بیلنس اور بل ڈیمو ڈیٹا ہیں۔",
+    regenerate: "🔄 نیا ڈیمو ڈیٹا",
+    tab_home: "ہوم", tab_assistant: "اسسٹنٹ", tab_history: "تاریخ", tab_profile: "پروفائل",
+    loan_card_title: "قرضہ ادائیگی کا منصوبہ",
+    loan_plan_current: "موجودہ ادائیگی کا منصوبہ",
+    loan_paid_off: "مکمل ادا",
+    loan_fully_repaid: "قرضہ مکمل ادا ہو چکا",
+    loan_next_payment: "اگلی ادائیگی · {due}",
+    loan_remaining: "{n} قسط(یں) باقی",
+    loan_no_remaining: "کوئی قسط باقی نہیں",
+    loan_outstanding: "{amt} باقی",
+    loan_fully_settled: "مکمل کلیئر",
+    status_ok: "کامیاب", status_fail: "ناکام", hint_help: "مدد کے لیے ٹیپ کریں",
+    verified_level: "لیول {n} تصدیق شدہ",
+    status_on_track: "آن ٹریک", status_due_soon: "جلد واجب", status_due_today: "آج واجب",
+    status_behind: "تاخیر میں",
+    toast_security: "🔒 سیکیورٹی اور پن یہاں کھلیں گی۔",
+    toast_linked: "💳 منسلک اکاؤنٹس یہاں کھلیں گے۔",
+    toast_settings: "⚙️ ایپ سیٹنگز یہاں کھلیں گی۔",
+    app_lang_note: "ایپ کی زبان اردو کر دی گئی۔",
+    due_repaid: "قرضہ مکمل ادا", due_overdue: "{n} دن تاخیر", due_today: "آج واجب", due_in: "{n} دن میں واجب",
+    plan_faster: "تیز ادائیگی", plan_balanced: "متوازن", plan_lower: "کم اقساط",
+  }
+};
+
+const CHAT_I18N = {
+  english: {
+    placeholder: "Ask in English…",
+    assistant_title: "JazzCash Assistant",
+    live_ai: "LIVE AI",
+    assistant_sub: "Always on · Secure · Powered by Gemma",
+    chip_send: "Send Money", chip_bill: "Pay a Bill", chip_topup: "Top-Up",
+    chip_addmoney: "Add Money", chip_recovery: "Failed Payment", chip_loan: "Loan Repayment",
+    greeting: "Hi {name} 👋 I'm your JazzCash Assistant. Tell me what you need — send money, pay a bill, top up, add funds, manage your loan, or fix a failed payment.",
+    chat_lang_note: "Chat replies are now in <b>English</b>.",
+    proactive_tag: "EVENT-DRIVEN ENGAGEMENT",
+    heal_tag: "✓ AUTONOMOUS RESOLUTION",
+    api_error: "I couldn't reach the AI service right now. Make sure the backend is running on port 8000.",
+    cancel: "Cancel", amount: "Amount", fee: "Fee", balance_after: "Balance after",
+    pay_now: "Pay Now", remind_later: "Remind Later", activate: "Activate", not_now: "Not Now",
+    approve_send: "Approve & Send", price: "Price", amount_due: "Amount due",
+    someone_else: "Someone else…", other_amount: "Other amount…",
+    flow_send_user: "I'd like to send money",
+    flow_send_who: "Who would you like to send money to?",
+    flow_send_name: "Sure — type their name.",
+    flow_send_amount: "How much would you like to send {name}?",
+    flow_send_summary: "Got it — sending {amount} to {name}. Here's the summary before I move any money.",
+    verified_jc: "✓ Verified JazzCash account",
+    flow_bill_user: "I'd like to pay a bill",
+    flow_bill_which: "Which bill would you like to pay?",
+    flow_topup_user: "I'd like to top up",
+    flow_topup_ask: "Your {pkg} expires in {hours} hours. Renew it, or pick something else?",
+    flow_renew: "Renew {pkg}",
+    flow_add_user: "I need to add money",
+    flow_add_how: "How much would you like to add?",
+    flow_add_sure: "Sure — how much?",
+    cheapest: "CHEAPEST", free: "Free", proceed: "Proceed with {name}",
+    flow_fail_user: "My payment didn't go through",
+    flow_fail_ask: "I see a failed payment — {title} for {amount}. What would you like to do?",
+    what_happened: "What happened?", retry: "Retry payment", support: "Contact support",
+    retry_now: "Would you like to retry now?", later: "Not now",
+    fail_explain: "Good news — <b>{amount} was not deducted</b>. The merchant didn't confirm in time, so JazzCash reversed the hold. You can safely retry.",
+    ok_anytime: "No problem — ask any time.",
+    flow_loan_user: "I need help with my loan",
+    loan_paid: "Your loan is <b>fully repaid</b>. There is no outstanding payment right now.",
+    loan_behind_ask: "I noticed your loan payment is <b>{days} days overdue</b>. Your regular installment is <b>{inst}</b>. Catch-up is <b>{catchup}</b>, including late charge <b>{fee}</b>. What would you like to do?",
+    loan_ok_ask: "I checked your loan. Your next installment is <b>{inst}</b>, {due}. You have <b>{n}</b> payment(s) remaining.",
+    see_plans: "See repayment plans", explain_charges: "Explain the charges", catchup_pay: "Make catch-up payment",
+    pay_next: "Pay next installment", compare_plans: "Compare payment plans", if_late: "What if I'm late?", set_reminder: "Set a reminder",
+    due_repaid: "loan fully repaid", due_overdue: "{n} day(s) overdue", due_today: "due today", due_in: "due in {n} day(s)",
+    plans_intro: "I can compare three <b>illustrative</b> repayment structures based on your loan.",
+    plan_faster: "Faster payoff", plan_faster_desc: "Larger monthly payments to shorten the remaining period.",
+    plan_balanced: "Balanced", plan_balanced_desc: "Keeps the remaining period close to your current schedule.",
+    plan_lower: "Lower payments", plan_lower_desc: "Smaller monthly payments over a longer illustrative period.",
+    per_month: "{amt} / month", n_payments: "{n} payments",
+    choose_plan: "Choose this plan", keep_current: "Keep current",
+    plan_updated: "Payment plan updated",
+    approve_repay: "Approve repayment", catchup_label: "Catch-up payment", next_inst: "Next installment",
+    loan_repay_title: "Loan repayment", wallet_bal: "Wallet balance",
+    prepare_repay: "I can prepare a {amount} loan repayment. <b>I will not move money until you explicitly approve it.</b>",
+    reminder_ask: "When would you like your payment reminder?",
+    rem_3: "3 days before", rem_1: "1 day before", rem_due: "On the due date", rem_none: "No reminder",
+    no_action: "No action taken — you can always ask again later.",
+    working: "Working on it…",
+    sent: "Sent!", bill_paid: "Bill Paid!", activated: "Activated!", money_added: "Money Added!",
+    flag_large: "⚠️ This is a larger amount than your usual transfers — worth a second look.",
+    bill_meta: "{kind} bill · due in {n} day(s)",
+    bill_higher: "📈 About {amt} higher than usual.",
+    add_title: "Add {amt}",
+    add_comparing: "Comparing your funding sources",
+    connecting_support: "Connecting you to a support specialist…",
+    sub_sent: "{amt} sent to {name}.",
+    sub_bill: "{name} bill of {amt} paid.",
+    sub_topup: "{name} activated on your number.",
+    sub_addmoney: "{amt} added via {name}.",
+    charges_intro: "<b>Here’s the breakdown.</b> Your regular installment is {inst}. {detail}",
+    charges_behind: "You are {days} days behind in this demo, and a simulated late charge of {fee} brings the current catch-up amount to {catchup}.",
+    charges_ok: "Actual late-payment charges and any grace period would come from the live loan agreement. This prototype only demonstrates how the assistant could explain them.",
+    k_regular: "Regular installment", k_late: "Simulated late charge", k_catchup: "Current catch-up",
+    loan_note_illust: "Illustrative only — production values should come directly from the customer’s actual loan terms.",
+    compare_options: "Would you like to compare repayment options?",
+    show_plans: "Show payment plans",
+    plan_unchanged: "No problem — your current repayment arrangement remains unchanged.",
+    plans_intro_full: "I can compare three <b>illustrative</b> repayment structures. The actual options you can choose would be based on your live loan agreement and eligibility.",
+    illustrative: "Illustrative option",
+    k_payment: "Payment", k_periods: "Payment periods",
+    plan_toast: "{name} is now your simulated loan payment plan: {amt} for {n} payments.",
+    plan_updated_sub: "{amt} per payment for {n} payments. Your home screen has been updated.",
+    processing_repay: "Processing repayment…",
+    insufficient: "Your simulated wallet balance is not enough for this repayment.",
+    repay_complete: "Repayment complete",
+    repay_applied: "{amt} was applied to the simulated loan balance.",
+    rem_saved: "Reminder preference saved for <b>{when}</b>.",
+    rem_none_saved: "No reminder preference saved.",
+    rem_proto: "This is a prototype — it does not schedule a real notification.",
+    got_it: "Got it, thanks", lets_handle: "Let's handle it",
+    guide_send: "Guide me: Send Money",
+    open_route: "Open <b>{route}</b> in the JazzCash app to continue.",
+    get_code: "Get the code",
+    ph_name: "e.g. Bilal", ph_amount: "e.g. 2000", ph_add: "e.g. 15000",
+    nudge_pay_ask: "Want me to prepare that payment?",
+    nudge_yes_pay: "Yes, pay now",
+    nudge_remind: "Remind me later",
+    nudge_remind_ok: "Sure, I'll remind you again closer to the due date.",
+    heal_note: "Just so you know: I can only auto-fix read-only issues like sync glitches or duplicate blocks. Anything that moves your money will always wait for your approval first.",
+    toast_bill: "Your {name} bill of {amt} is due in {n} days — about {inc} higher than usual. Want me to prepare the payment?",
+    toast_topup: "Your {pkg} expires in {hours} hours. Renew for {price}?",
+    toast_recovery: "Your payment to {title} failed, but {amt} was not deducted. Want me to explain what happened?",
+    toast_offer: "{ico} {reason} — here's {discount} at {merchant}. Want the code?",
+    toast_loan_behind: "Your loan payment is {days} days overdue. The simulated catch-up amount is {catchup}, including {fee} in illustrative late charges. Want me to walk you through your options?",
+    toast_loan_ok: "Your next loan payment of {inst} is {due}. Want me to review payment options or set a reminder?",
+    toast_heal: "🩺 I noticed {issue} and {fix}. Your account is correct — no action needed.",
+    title_bill: "Event-Driven Engagement: Bill Due",
+    title_topup: "Predictive Engagement: Renewal",
+    title_recovery: "Real-Time Service Recovery",
+    title_offer: "Hyper-Personalized Engagement",
+    title_loan: "Proactive Repayment Journey Management",
+    title_heal: "Autonomous Self-Healing",
+    sub_bill_n: "{name} · {amt} due in {n} day(s)",
+    sub_topup_n: "{pkg} expires in {hours}h",
+    sub_recovery_n: "Transfer to {title} failed",
+    sub_offer_n: "{merchant} · {discount}",
+    sub_loan_catchup: "Catch-up needed",
+    sub_loan_due_today: "Payment due today",
+    sub_loan_next: "Next installment",
+    heal_issue_dup: "a duplicate top-up request",
+    heal_fix_dup: "blocked the second attempt automatically",
+    heal_issue_sync: "a delayed balance sync after your last transfer",
+    heal_fix_sync: "refreshed it in the background",
+    heal_issue_stuck: "a stuck pending status on a completed bill payment",
+    heal_fix_stuck: "cleared it automatically",
+  },
+  urdu: {
+    placeholder: "اردو میں پوچھیں…",
+    assistant_title: "جازکیش اسسٹنٹ",
+    live_ai: "لائیو AI",
+    assistant_sub: "ہمیشہ دستیاب · محفوظ · Gemma",
+    chip_send: "رقم بھیجیں", chip_bill: "بل ادا کریں", chip_topup: "ٹاپ اپ",
+    chip_addmoney: "رقم شامل کریں", chip_recovery: "ناکام ادائیگی", chip_loan: "قرضہ ادائیگی",
+    greeting: "السلام علیکم {name} 👋 میں آپ کا جازکیش اسسٹنٹ ہوں۔ رقم بھیجنا، بل، ٹاپ اپ، قرضہ یا ناکام ادائیگی — کچھ بھی پوچھیں۔",
+    chat_lang_note: "اب چیٹ کے جوابات <b>اردو</b> میں آئیں گے۔",
+    proactive_tag: "ایونٹ پر مبنی مشغولیت",
+    heal_tag: "✓ خودکار حل",
+    api_error: "AI سروس سے رابطہ نہیں ہو سکا۔ یقینی بنائیں بیک اینڈ پورٹ 8000 پر چل رہا ہے۔",
+    cancel: "منسوخ", amount: "رقم", fee: "فیس", balance_after: "بعد میں بیلنس",
+    pay_now: "ابھی ادا کریں", remind_later: "بعد میں یاد دلائیں", activate: "فعال کریں", not_now: "ابھی نہیں",
+    approve_send: "منظور کریں اور بھیجیں", price: "قیمت", amount_due: "واجب الادا",
+    someone_else: "کوئی اور…", other_amount: "دیگر رقم…",
+    flow_send_user: "میں رقم بھیجنا چاہتا/چاہتی ہوں",
+    flow_send_who: "آپ کس کو رقم بھیجنا چاہتے ہیں؟",
+    flow_send_name: "نام لکھیں۔",
+    flow_send_amount: "{name} کو کتنی رقم بھیجنی ہے؟",
+    flow_send_summary: "ٹھیک ہے — {name} کو {amount} بھیج رہے ہیں۔ تصدیق سے پہلے خلاصہ:",
+    verified_jc: "✓ تصدیق شدہ جازکیش اکاؤنٹ",
+    flow_bill_user: "مجھے بل ادا کرنا ہے",
+    flow_bill_which: "کون سا بل ادا کرنا ہے؟",
+    flow_topup_user: "مجھے ٹاپ اپ چاہیے",
+    flow_topup_ask: "آپ کا {pkg} {hours} گھنٹوں میں ختم ہو رہا ہے۔ تجدید کریں یا کچھ اور؟",
+    flow_renew: "{pkg} تجدید کریں",
+    flow_add_user: "مجھے رقم شامل کرنی ہے",
+    flow_add_how: "کتنی رقم شامل کرنی ہے؟",
+    flow_add_sure: "کتنی رقم؟",
+    cheapest: "سب سے سستا", free: "مفت", proceed: "{name} سے جاری رکھیں",
+    flow_fail_user: "میری ادائیگی نہیں ہوئی",
+    flow_fail_ask: "ناکام ادائیگی ملی — {title} · {amount}۔ آپ کیا کرنا چاہتے ہیں؟",
+    what_happened: "کیا ہوا؟", retry: "دوبارہ کوشش", support: "سپورٹ",
+    retry_now: "کیا ابھی دوبارہ کوشش کریں؟", later: "ابھی نہیں",
+    fail_explain: "خوشخبری — <b>{amount} نہیں کٹی</b>۔ مرچنٹ نے تصدیق نہیں کی، جازکیش نے ہولڈ واپس کر دیا۔",
+    ok_anytime: "ٹھیک ہے — جب چاہیں پوچھ لیں۔",
+    flow_loan_user: "قرضے میں میری مدد کریں",
+    loan_paid: "آپ کا قرضہ <b>مکمل ادا</b> ہو چکا ہے۔ اب کوئی واجب نہیں۔",
+    loan_behind_ask: "آپ کی قسط <b>{days} دن لیٹ</b> ہے۔ باقاعدہ قسط <b>{inst}</b> ہے۔ کیچ اپ <b>{catchup}</b> ہے، جس میں لیٹ فیس <b>{fee}</b> شامل ہے۔ کیا کریں؟",
+    loan_ok_ask: "آپ کی اگلی قسط <b>{inst}</b> ہے، {due}۔ <b>{n}</b> قسط(یں) باقی ہیں۔",
+    see_plans: "ادائیگی کے منصوبے دیکھیں", explain_charges: "چارجز سمجھائیں", catchup_pay: "کیچ اپ ادا کریں",
+    pay_next: "اگلی قسط ادا کریں", compare_plans: "منصوبے موازنہ کریں", if_late: "اگر لیٹ ہو جاؤں؟", set_reminder: "یاد دہانی سیٹ کریں",
+    due_repaid: "قرضہ مکمل ادا", due_overdue: "{n} دن تاخیر", due_today: "آج واجب", due_in: "{n} دن میں واجب",
+    plans_intro: "میں تین <b>مثالی</b> ادائیگی کے ڈھانچے دکھا سکتا ہوں۔",
+    plan_faster: "تیز ادائیگی", plan_faster_desc: "بڑی ماہانہ اقساط سے مدت کم کریں۔",
+    plan_balanced: "متوازن", plan_balanced_desc: "موجودہ شیڈول کے قریب رہیں۔",
+    plan_lower: "کم اقساط", plan_lower_desc: "چھوٹی اقساط، لمبی مدت۔",
+    per_month: "{amt} / ماہ", n_payments: "{n} اقساط",
+    choose_plan: "یہ منصوبہ چنیں", keep_current: "موجودہ رکھیں",
+    plan_updated: "منصوبہ اپڈیٹ ہو گیا",
+    approve_repay: "ادائیگی منظور کریں", catchup_label: "کیچ اپ ادائیگی", next_inst: "اگلی قسط",
+    loan_repay_title: "قرضہ ادائیگی", wallet_bal: "والیٹ بیلنس",
+    prepare_repay: "میں {amount} کی ادائیگی تیار کر سکتا ہوں۔ <b>آپ کی منظوری کے بغیر رقم نہیں ہلے گی۔</b>",
+    reminder_ask: "یاد دہانی کب چاہیے؟",
+    rem_3: "۳ دن پہلے", rem_1: "۱ دن پہلے", rem_due: "واجب کی تاریخ پر", rem_none: "کوئی یاد دہانی نہیں",
+    no_action: "کوئی کارروائی نہیں — بعد میں پوچھ سکتے ہیں۔",
+    working: "کام ہو رہا ہے…",
+    sent: "بھیج دی!", bill_paid: "بل ادا!", activated: "فعال!", money_added: "رقم شامل!",
+    flag_large: "⚠️ یہ آپ کے معمول سے بڑی رقم ہے — دوبارہ چیک کریں۔",
+    bill_meta: "{kind} بل · {n} دن میں واجب",
+    bill_higher: "📈 عام سے تقریباً {amt} زیادہ۔",
+    add_title: "{amt} شامل کریں",
+    add_comparing: "فنڈنگ ذرائع کا موازنہ",
+    connecting_support: "سپورٹ سے جوڑ رہے ہیں…",
+    sub_sent: "{amt} {name} کو بھیج دی گئی۔",
+    sub_bill: "{name} کا بل {amt} ادا ہو گیا۔",
+    sub_topup: "{name} آپ کے نمبر پر فعال۔",
+    sub_addmoney: "{amt} {name} کے ذریعے شامل۔",
+    charges_intro: "<b>تفصیل یہ ہے:</b> باقاعدہ قسط {inst} ہے۔ {detail}",
+    charges_behind: "اس ڈیمو میں آپ {days} دن پیچھے ہیں، اور {fee} کی مثالی لیٹ فیس سے کیچ اپ {catchup} بنتا ہے۔",
+    charges_ok: "اصل لیٹ چارجز لائیو قرضہ معاہدے سے آئیں گے۔ یہ پروٹوٹائپ صرف وضاحت دکھاتا ہے۔",
+    k_regular: "باقاعدہ قسط", k_late: "مثالی لیٹ چارج", k_catchup: "موجودہ کیچ اپ",
+    loan_note_illust: "صرف مثالی — پروڈکشن میں اصل قرضہ شرائط استعمال ہوں گی۔",
+    compare_options: "ادائیگی کے اختیارات کا موازنہ کریں؟",
+    show_plans: "منصوبے دکھائیں",
+    plan_unchanged: "ٹھیک ہے — موجودہ انتظام برقرار ہے۔",
+    plans_intro_full: "میں تین <b>مثالی</b> ادائیگی کے ڈھانچے دکھا سکتا ہوں۔ اصل اختیارات آپ کے لائیو معاہدے پر منحصر ہیں۔",
+    illustrative: "مثالی اختیار",
+    k_payment: "ادائیگی", k_periods: "ادائیگی ادوار",
+    plan_toast: "{name} اب آپ کا ڈیمو منصوبہ ہے: {amt} · {n} اقساط۔",
+    plan_updated_sub: "ہر ادائیگی {amt} · {n} اقساط۔ ہوم اسکرین اپڈیٹ ہو گئی۔",
+    processing_repay: "ادائیگی پروسیس ہو رہی ہے…",
+    insufficient: "ڈیمو والیٹ بیلنس اس ادائیگی کے لیے کافی نہیں۔",
+    repay_complete: "ادائیگی مکمل",
+    repay_applied: "{amt} ڈیمو قرضہ بیلنس پر لگائی گئی۔",
+    rem_saved: "یاد دہانی ترجیح محفوظ: <b>{when}</b>۔",
+    rem_none_saved: "کوئی یاد دہانی محفوظ نہیں۔",
+    rem_proto: "یہ پروٹوٹائپ ہے — حقیقی نوٹیفکیشن شیڈول نہیں ہوتی۔",
+    got_it: "سمجھ گیا، شکریہ", lets_handle: "چلیں سنبھالتے ہیں",
+    guide_send: "رہنمائی: رقم بھیجیں",
+    open_route: "جاری رکھنے کے لیے جازکیش ایپ میں <b>{route}</b> کھولیں۔",
+    get_code: "کوڈ حاصل کریں",
+    ph_name: "مثلاً بلال", ph_amount: "مثلاً 2000", ph_add: "مثلاً 15000",
+    nudge_pay_ask: "کیا میں ادائیگی تیار کروں؟",
+    nudge_yes_pay: "ہاں، ابھی ادا کریں",
+    nudge_remind: "بعد میں یاد دلائیں",
+    nudge_remind_ok: "ٹھیک ہے، واجب تاریخ کے قریب دوبارہ یاد دوں گا۔",
+    heal_note: "بات یہ ہے: میں صرف ریڈ اونلی مسائل جیسے سنک یا ڈپلیکیٹ بلاک خود ٹھیک کر سکتا ہوں۔ جو رقم منتقل کرے وہ ہمیشہ آپ کی منظوری کا منتظر رہے گا۔",
+    toast_bill: "آپ کا {name} بل {amt} · {n} دن میں واجب — عام سے تقریباً {inc} زیادہ۔ کیا ادائیگی تیار کروں؟",
+    toast_topup: "آپ کا {pkg} {hours} گھنٹوں میں ختم۔ {price} میں تجدید؟",
+    toast_recovery: "{title} کو ادائیگی ناکام، مگر {amt} نہیں کٹی۔ کیا وضاحت چاہیے؟",
+    toast_offer: "{ico} {reason} — {merchant} پر {discount}۔ کوڈ چاہیے؟",
+    toast_loan_behind: "قسط {days} دن لیٹ ہے۔ کیچ اپ {catchup} ہے، جس میں {fee} لیٹ چارج شامل ہے۔ اختیارات دیکھیں؟",
+    toast_loan_ok: "اگلی قسط {inst} · {due}۔ اختیارات یا یاد دہانی؟",
+    toast_heal: "🩺 میں نے {issue} دیکھا اور {fix}۔ اکاؤنٹ درست ہے — کچھ کرنے کی ضرورت نہیں۔",
+    title_bill: "ایونٹ پر مبنی مشغولیت: بل واجب",
+    title_topup: "پیش گوئی مشغولیت: تجدید",
+    title_recovery: "ریئل ٹائم سروس ریکوری",
+    title_offer: "ذاتی مشغولیت",
+    title_loan: "فعال ادائیگی سفر کا انتظام",
+    title_heal: "خودکار سیلف ہیلنگ",
+    sub_bill_n: "{name} · {amt} · {n} دن میں واجب",
+    sub_topup_n: "{pkg} · {hours} گھنٹے میں ختم",
+    sub_recovery_n: "{title} کو ٹرانسفر ناکام",
+    sub_offer_n: "{merchant} · {discount}",
+    sub_loan_catchup: "کیچ اپ درکار",
+    sub_loan_due_today: "آج واجب",
+    sub_loan_next: "اگلی قسط",
+    heal_issue_dup: "ڈپلیکیٹ ٹاپ اپ درخواست",
+    heal_fix_dup: "دوسری کوشش خود بلاک کی",
+    heal_issue_sync: "آخری ٹرانسفر کے بعد بیلنس سنک میں تاخیر",
+    heal_fix_sync: "پس منظر میں ریفریش کیا",
+    heal_issue_stuck: "مکمل بل پر پینڈنگ اسٹیٹس پھنسا ہوا",
+    heal_fix_stuck: "خود صاف کر دیا",
+  }
+};
+
+function t(key, vars){
+  const pack = I18N[jcAppLanguage] || I18N.english;
+  let s = pack[key] ?? I18N.english[key] ?? key;
+  if(vars) Object.keys(vars).forEach(k => { s = s.replace("{"+k+"}", String(vars[k])); });
+  return s;
+}
+function tc(key, vars){
+  const pack = CHAT_I18N[jcChatLanguage] || CHAT_I18N.english;
+  let s = pack[key] ?? CHAT_I18N.english[key] ?? key;
+  if(vars) Object.keys(vars).forEach(k => { s = s.replace("{"+k+"}", String(vars[k])); });
+  return s;
+}
+
+function applyAppLanguage(){
+  document.body.classList.toggle("lang-urdu", jcAppLanguage === "urdu");
+  document.querySelectorAll("#app-lang-toggle button[data-lang]").forEach(btn => {
+    const on = btn.getAttribute("data-lang") === jcAppLanguage;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if(key) el.textContent = t(key);
+  });
+  // dynamic bits
+  if(state && state.last4){
+    const mc = document.getElementById("masked-card");
+    if(mc) mc.textContent = t("wallet_label") + " · \u2022\u2022\u2022\u2022 " + state.last4;
+    if(state.myPhone){
+      const ph = document.getElementById("profile-phone");
+      if(ph) ph.textContent = state.myPhone + " · " + t("verified_level", { n: state.kycLevel });
+    }
+  }
+  if(typeof renderTxns === "function" && state && state.txns) renderTxns();
+  if(typeof renderHomeLoanCard === "function" && state && state.loan) renderHomeLoanCard();
+}
+
+function applyChatLanguage(){
+  jcReplyLanguage = jcChatLanguage; // alias for API
+  document.getElementById("sheet")?.classList.toggle("chat-urdu", jcChatLanguage === "urdu");
+  document.querySelectorAll("#chat-lang-toggle button[data-lang]").forEach(btn => {
+    const on = btn.getAttribute("data-lang") === jcChatLanguage;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  document.querySelectorAll("[data-i18n-chat]").forEach(el => {
+    const key = el.getAttribute("data-i18n-chat");
+    if(key) el.textContent = tc(key);
+  });
+  resetTextPlaceholder();
+}
+
+function setAppLanguage(lang, opts){
+  const silent = opts && opts.silent;
+  const next = (lang === "urdu") ? "urdu" : "english";
+  const changed = next !== jcAppLanguage;
+  jcAppLanguage = next;
+  try { localStorage.setItem("jc_app_language", jcAppLanguage); } catch(_e) {}
+  applyAppLanguage();
+  if(!silent && changed) showToast(t("app_lang_note"));
+}
+window.setAppLanguage = setAppLanguage;
+
+function setChatLanguage(lang, opts){
+  const silent = opts && opts.silent;
+  const next = (lang === "urdu") ? "urdu" : "english";
+  const changed = next !== jcChatLanguage;
+  jcChatLanguage = next;
+  jcReplyLanguage = next;
+  try {
+    localStorage.setItem("jc_chat_language", jcChatLanguage);
+    localStorage.setItem("jc_reply_language", jcChatLanguage);
+  } catch(_e) {}
+  if(changed) jcSessionId = null;
+  applyChatLanguage();
+  if(changed && !silent){
+    // Reset chat so every visible message matches the new chat language
+    state.convo.pendingOptions = [];
+    state.convo.pendingResolver = null;
+    state.convo.pendingTextResolver = null;
+    document.getElementById("chat-log").innerHTML = "";
+    seedGreeting();
+    addAssistantHTML(`<div class="bubble">${tc("chat_lang_note")}</div>`);
+  }
+}
+window.setChatLanguage = setChatLanguage;
+// legacy no-op redirect if anything still calls old name for chat
+function setReplyLanguage(lang, opts){ setChatLanguage(lang, opts); }
+window.setReplyLanguage = setReplyLanguage;
+
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+function routeFromAction(route){
+  if(!route) return null;
+  const r = String(route).toLowerCase();
+  if(r.includes("loan") || r.includes("ready-cash") || r.includes("readycash") || r.includes("repay") || r.includes("installment") || r.includes("qarz")) return "loan";
+  if(r.includes("send") || r.includes("transfer") || r.includes("raast")) return "send";
+  if(r.includes("bill")) return "bill";
+  if(r.includes("recharge") || r.includes("topup") || r.includes("top-up") || r.includes("mobile")) return "topup";
+  if(r.includes("add") || r.includes("fund") || r.includes("cash-in") || r.includes("cashin")) return "addmoney";
+  if(r.includes("support") || r.includes("recover") || r.includes("fail") || r.includes("transaction")) return "recovery";
+  return null;
+}
+
+function renderLlmReply(data){
+  const text = escapeHtml(data.response || "Sorry, I couldn't generate a reply.");
+  const urduClass = (data.language === "urdu") ? ' style="font-family:\'Noto Nastaliq Urdu\',Inter,sans-serif; line-height:1.7;"' : "";
+  let html = `<div class="bubble"${urduClass}>${text.replace(/\n/g,"<br>")}</div>`;
+
+  const action = data.suggested_action;
+  if(action && action.label && action.route){
+    const module = routeFromAction(action.route);
+    const safeLabel = escapeHtml(action.label);
+    if(module){
+      html += `<div class="inline-chip-row"><button class="inline-chip" onclick="quickStart('${module}')">${safeLabel}</button></div>`;
+    } else {
+      html += `<div class="inline-chip-row"><button class="inline-chip" onclick="addAssistantHTML('<div class=\\'bubble\\'>${escapeHtml(tc("open_route",{route:action.route})).replace(/'/g,"\\'")}</div>')">${safeLabel}</button></div>`;
+    }
+  }
+  if(data.blocked_transaction){
+    html += `<div class="inline-chip-row"><button class="inline-chip" onclick="quickStart('send')">${escapeHtml(tc("guide_send"))}</button></div>`;
+  }
+  const prompts = (data.suggested_prompts || []).slice(0, 3);
+  if(prompts.length){
+    html += `<div class="inline-chip-row">` +
+      prompts.map(p => `<button class="inline-chip" onclick="sendFreeText(${JSON.stringify(p)})">${escapeHtml(p)}</button>`).join("") +
+      `</div>`;
+  }
+  addAssistantHTML(html);
+}
+
+async function askBackend(message){
+  const L = state.loan || {};
+  const context = {
+    prototype: "JazzCash_CX4_Agentic_Prototype",
+    preferred_language: jcChatLanguage,
+    user: {
+      name: state.myName,
+      phone: state.myPhone,
+      wallet_balance: state.balance,
+      kyc_level: state.kycLevel,
+    },
+    ready_cash_loan: {
+      product: "Ready Cash",
+      status: L.status,
+      original: L.original,
+      outstanding: L.outstanding,
+      installment: L.installment,
+      remaining_payments: L.remaining,
+      overdue_days: L.overdueDays,
+      late_fee: L.lateFee,
+      due_text: typeof loanDueText === "function" ? loanDueText("chat") : null,
+      selected_plan: L.selectedPlan ? L.selectedPlan.name : null,
+      reminder: L.reminder,
+    },
+    note: "Concept Demo — UI modules guide flows; assistant must not execute real money moves. For loans use /loans.",
+  };
+  const res = await fetch(`${API_BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message,
+      session_id: jcSessionId || undefined,
+      stream: false,
+      preferred_language: jcChatLanguage,
+      context,
+    }),
+  });
+  if(!res.ok){
+    const errText = await res.text();
+    throw new Error(errText || res.statusText);
+  }
+  const data = await res.json();
+  if(data.session_id) jcSessionId = data.session_id;
+  return data;
+}
+
+async function sendFreeText(text){
+  const msg = String(text || "").trim();
+  if(!msg || jcChatBusy) return;
+  jcChatBusy = true;
+  addUser(msg);
+  addTyping();
+  try{
+    let data = await askBackend(msg);
+    // Client safety net: if UI is Urdu-locked but reply drifted to English, force one retry
+    if(jcChatLanguage === "urdu" && data && data.response){
+      const urduChars = (data.response.match(/[\u0600-\u06FF]/g) || []).length;
+      const latinChars = (data.response.match(/[A-Za-z]/g) || []).length;
+      const ratio = (urduChars + latinChars) ? urduChars / (urduChars + latinChars) : 0;
+      if(ratio < 0.55){
+        data = await askBackend(
+          msg + "\n\n[سیستم: پچھلا جواب انگریزی میں تھا — اب صرف اردو رسم الخط میں جواب دیں۔]"
+        );
+      }
+    }
+    removeTyping();
+    renderLlmReply(data);
+  } catch(err){
+    removeTyping();
+    addAssistantHTML(`<div class="bubble">${tc("api_error")}<br><span style="color:var(--muted); font-size:11px;">${escapeHtml(err.message || err)}</span></div>`);
+  } finally {
+    jcChatBusy = false;
+  }
+}
+
+/* ---------- composer routing ---------- */
+function handleComposerSend(){
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = "";
+  if(state.convo.pendingTextResolver){
+    addUser(text);
+    const resolver = state.convo.pendingTextResolver;
+    state.convo.pendingTextResolver = null;
+    resetTextPlaceholder();
+    return afterDelay(()=>resolver(text));
+  }
+  // Free chat → Jazz Gemma; structured chips still open local module flows
+  sendFreeText(text);
+}
+function quickStart(kind){
+  state.convo.pendingOptions = []; state.convo.pendingResolver = null; state.convo.pendingTextResolver = null;
+  resetTextPlaceholder();
+  if(kind==="send") return startSend({});
+  if(kind==="bill") return startBill();
+  if(kind==="topup") return startTopup();
+  if(kind==="addmoney") return startAddMoney();
+  if(kind==="recovery") return startRecovery();
+  if(kind==="loan") return startLoanFlow();
+}
+
+/* ============================================================
+   FLOW 1 — SEND MONEY (multi-turn)
+   ============================================================ */
+function startSend(prefill){
+  const data = Object.assign({contact:null, amount:null}, prefill);
+  if(data.contact && data.amount) return showSendConfirm(data);
+  if(data.contact) return askSendAmount(data);
+  addUser(tc("flow_send_user"));
+  afterDelay(()=>{
+    const options = state.contacts.slice(0,4).map(c=>({label:c.name.split(" ")[0], contact:c}));
+    options.push({label:tc("someone_else"), other:true});
+    askChips(tc("flow_send_who"), options, (opt)=>{
+      if(opt.other){
+        askText(tc("flow_send_name"), (name)=>{
+          const found = state.contacts.find(c=>c.name.toLowerCase().includes(name.toLowerCase())) || {name, phone:randomPhone()};
+          askSendAmount({contact:found});
+        }, tc("ph_name"));
+      } else askSendAmount({contact:opt.contact});
+    });
+  });
+}
+function askSendAmount(data){
+  askText(tc("flow_send_amount", { name: data.contact.name.split(" ")[0] }), (text)=>{
+    const m = text.match(/[\d,]+/);
+    const amt = m ? parseInt(m[0].replace(/,/g,"")) : randInt(500,5000);
+    showSendConfirm(Object.assign({}, data, {amount:amt}));
+  }, tc("ph_amount"));
+}
+function showSendConfirm(data){
+  const fee = 15;
+  const resulting = state.balance - data.amount - fee;
+  addAssistantHTML(tc("flow_send_summary", { amount: fmt(data.amount), name: data.contact.name }));
+  addAssistantHTML(`
+    <div class="card">
+      <div class="card-title"><div class="av">${initials(data.contact.name)}</div><div><b>${data.contact.name}</b><small>${tc("verified_jc")}</small></div></div>
+      <div class="card-row"><span class="k">${tc("amount")}</span><span class="v">${fmt(data.amount)}</span></div>
+      <div class="card-row"><span class="k">${tc("fee")}</span><span class="v">${fmt(fee)}</span></div>
+      <div class="card-row"><span class="k">${tc("balance_after")}</span><span class="v">${fmt(resulting)}</span></div>
+      ${data.amount>4000 ? `<div class="flag">${tc("flag_large")}</div>` : ""}
+      <div class="btn-row">
+        <button class="btn primary" onclick="approveAction(this,'send', ${JSON.stringify({amount:data.amount,fee,name:data.contact.name}).replace(/"/g,'&quot;')})">${tc("approve_send")}</button>
+        <button class="btn outline" onclick="cancelAction(this)">${tc("cancel")}</button>
+      </div>
+    </div>`);
+}
+
+/* ============================================================
+   FLOW 2 — BILL PAYMENT
+   ============================================================ */
+function startBill(prefillBiller){
+  if(prefillBiller) return showBillConfirm(prefillBiller);
+  addUser(tc("flow_bill_user"));
+  afterDelay(()=>{
+    const options = state.billers.map(b=>({label:`${b.name} · ${fmt(b.amount)}`, biller:b}));
+    askChips(tc("flow_bill_which"), options, (opt)=> showBillConfirm(opt.biller));
+  });
+}
+function showBillConfirm(b){
+  addAssistantHTML(`
+    <div class="card">
+      <div class="card-title"><div class="av">${initials(b.name)}</div><div><b>${b.name}</b><small style="color:var(--muted); font-weight:500;">${tc("bill_meta", { kind: b.kind, n: b.dueInDays })}</small></div></div>
+      <div class="card-row"><span class="k">${tc("amount_due")}</span><span class="v">${fmt(b.amount)}</span></div>
+      <div class="flag">${tc("bill_higher", { amt: fmt(b.increase) })}</div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="approveAction(this,'bill', ${JSON.stringify({amount:b.amount,name:b.name}).replace(/"/g,'&quot;')})">${tc("pay_now")}</button>
+        <button class="btn outline" onclick="cancelAction(this)">${tc("remind_later")}</button>
+      </div>
+    </div>`);
+}
+
+/* ============================================================
+   FLOW 3 — TOP-UP
+   ============================================================ */
+function startTopup(){
+  addUser(tc("flow_topup_user"));
+  afterDelay(()=>{
+    const options = [{label:tc("flow_renew", { pkg: state.pkg.name }), pkg: state.pkg}]
+      .concat(PACKAGES.filter(p=>p.name!==state.pkg.name).map(p=>({label:p.name+" · "+fmt(p.price), pkg:p})));
+    askChips(tc("flow_topup_ask", { pkg: state.pkg.name, hours: state.topupExpiresHours }), options, (opt)=> showTopupConfirm(opt.pkg));
+  });
+}
+function showTopupConfirm(p){
+  addAssistantHTML(`
+    <div class="card">
+      <div class="card-title"><div class="av">${ICONS.topup}</div><div><b>${p.name}</b><small style="color:var(--muted); font-weight:500;">${p.data} · ${p.mins}</small></div></div>
+      <div class="card-row"><span class="k">${tc("price")}</span><span class="v">${fmt(p.price)}</span></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="approveAction(this,'topup', ${JSON.stringify({amount:p.price,name:p.name}).replace(/"/g,'&quot;')})">${tc("activate")}</button>
+        <button class="btn outline" onclick="cancelAction(this)">${tc("not_now")}</button>
+      </div>
+    </div>`);
+}
+
+/* ============================================================
+   FLOW 4 — ADD MONEY
+   ============================================================ */
+function startAddMoney(prefillAmount){
+  if(prefillAmount) return showAddMoneyConfirm(prefillAmount);
+  addUser(tc("flow_add_user"));
+  afterDelay(()=>{
+    askChips(tc("flow_add_how"), [
+      {label:"Rs. 5,000", amount:5000}, {label:"Rs. 10,000", amount:10000},
+      {label:"Rs. 20,000", amount:20000}, {label:tc("other_amount"), other:true}
+    ], (opt)=>{
+      if(opt.other) askText(tc("flow_add_sure"), (txt)=>{ const m=txt.match(/[\d,]+/); showAddMoneyConfirm(m?parseInt(m[0].replace(/,/g,"")):10000); }, tc("ph_add"));
+      else showAddMoneyConfirm(opt.amount);
+    });
+  });
+}
+function showAddMoneyConfirm(amount){
+  const opts = state.fundOptions.slice().sort((a,b)=>a.fee-b.fee);
+  const rows = opts.map((o,i)=>`
+    <div class="fund-option ${i===0?'best':''}">
+      <span>${o.name} <span style="color:var(--muted); font-size:11px;">· ${o.mins}</span></span>
+      <span>${i===0?'<span class="tag">'+tc("cheapest")+'</span> ':''}${o.fee===0?tc("free"):fmt(o.fee)}</span>
+    </div>`).join("");
+  addAssistantHTML(`
+    <div class="card">
+      <div class="card-title"><div class="av">${ICONS.addmoney}</div><div><b>${tc("add_title", { amt: fmt(amount) })}</b><small style="color:var(--muted); font-weight:500;">${tc("add_comparing")}</small></div></div>
+      ${rows}
+      <div class="btn-row">
+        <button class="btn primary" onclick="approveAction(this,'addmoney', ${JSON.stringify({amount:amount,name:opts[0].name}).replace(/"/g,'&quot;')})">${tc("proceed", { name: opts[0].name })}</button>
+        <button class="btn outline" onclick="cancelAction(this)">${tc("cancel")}</button>
+      </div>
+    </div>`);
+}
+
+/* ============================================================
+   FLOW 5 — FAILED / PENDING RECOVERY
+   ============================================================ */
+function startRecovery(){
+  const f = state.failedTxn;
+  addUser(tc("flow_fail_user"));
+  afterDelay(()=>{
+    askChips(tc("flow_fail_ask", { title: f.title, amount: fmt(f.amount) }),
+      [{label:tc("what_happened"), action:"explain"},{label:tc("retry"), action:"retry"},{label:tc("support"), action:"support"}],
+      (opt)=>{
+        if(opt.action==="explain") return explainFailure();
+        if(opt.action==="retry") return startSend({contact:{name:f.title, phone:"—"}, amount:f.amount});
+        if(opt.action==="support") return connectSupport();
+      });
+  });
+}
+function explainFailure(){
+  addAssistantHTML(`<div class="bubble">${tc("fail_explain", { amount: fmt(state.failedTxn.amount) })}</div>`);
+  askChips(tc("retry_now"), [{label:tc("retry"), action:"retry"},{label:tc("later"), action:"later"}], (opt)=>{
+    if(opt.action==="retry") startSend({contact:{name:state.failedTxn.title, phone:"—"}, amount:state.failedTxn.amount});
+    else addAssistantHTML(`<div class="bubble">${tc("ok_anytime")}</div>`);
+  });
+}
+function connectSupport(){
+  addAssistantHTML(`<div class="card"><div style="display:flex; align-items:center; gap:8px; color:var(--muted);"><div class="typing"><span></span><span></span><span></span></div> ${tc("connecting_support")}</div></div>`);
+}
+
+/* ---------- shared approve/cancel handling ---------- */
+function cancelAction(btn){
+  const card = btn.closest(".card");
+  card.innerHTML = `<div style="text-align:center; color:var(--muted); padding:6px 0;">${tc("no_action")}</div>`;
+}
+function approveAction(btn, type, payload){
+  const card = btn.closest(".card");
+  card.innerHTML = `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; color:var(--muted);"><div class="typing"><span></span><span></span><span></span></div> ${tc("working")}</div>`;
+  setTimeout(()=>{
+    let title, sub;
+    if(type==="send"){ state.balance -= (payload.amount+payload.fee); state.totalSent += payload.amount; title=tc("sent"); sub=tc("sub_sent",{amt:fmt(payload.amount),name:payload.name}); state.txns.unshift({type:"send",title:"Sent to "+payload.name,sub:"P2P transfer",amount:payload.amount,sign:"-",ok:true,when:"Just now"}); }
+    if(type==="bill"){ state.balance -= payload.amount; state.totalSent += payload.amount; title=tc("bill_paid"); sub=tc("sub_bill",{name:payload.name,amt:fmt(payload.amount)}); state.txns.unshift({type:"bill",title:payload.name+" Bill",sub:"Utility payment",amount:payload.amount,sign:"-",ok:true,when:"Just now"}); }
+    if(type==="topup"){ state.balance -= payload.amount; state.totalSent += payload.amount; title=tc("activated"); sub=tc("sub_topup",{name:payload.name}); state.txns.unshift({type:"topup",title:payload.name,sub:"Mobile top-up",amount:payload.amount,sign:"-",ok:true,when:"Just now"}); }
+    if(type==="addmoney"){ state.balance += payload.amount; state.totalReceived += payload.amount; title=tc("money_added"); sub=tc("sub_addmoney",{amt:fmt(payload.amount),name:payload.name}); state.txns.unshift({type:"credit",title:"Wallet top-up via "+payload.name,sub:"Bank transfer in",amount:payload.amount,sign:"+",ok:true,when:"Just now"}); }
+    card.innerHTML = `<div class="success-box"><div class="success-check">\u2713</div><b>${title}</b><span style="color:var(--muted); font-size:12px;">${sub}</span></div>`;
+    renderAll();
+    scrollChat();
+  }, 900);
+}
+
+/* ---------- personalized offer redemption ---------- */
+function redeemOffer(offer, rid){
+  const row = document.getElementById(rid); if(row) row.remove();
+  addUser(tc("get_code"));
+  afterDelay(()=>{
+    const code = promoCode();
+    addAssistantHTML(`
+      <div class="card">
+        <div class="card-title"><div class="av">${offer.ico}</div><div><b>${offer.merchant}</b><small style="color:var(--muted); font-weight:500;">${offer.discount}</small></div></div>
+        <div class="promo-code">${code}</div>
+      </div>`);
+  });
+}
+
+/* ============================================================
+   FLOW 6 — LOAN REPAYMENT MANAGEMENT (add-on only)
+   ============================================================ */
+function loanDueText(mode){
+  const tr = mode === "app" ? t : tc;
+  const l=state.loan;
+  if(l.outstanding<=0 || l.status==="Paid Off") return tr("due_repaid");
+  if(l.status==="Behind") return tr("due_overdue", { n: l.overdueDays });
+  if(l.status==="Due Today") return tr("due_today");
+  const days=Math.max(1,Math.ceil((l.due-Date.now())/86400000));
+  return tr("due_in", { n: days });
+}
+function startLoanFlow(){
+  const l=state.loan;
+  addUser(tc("flow_loan_user"));
+  afterDelay(()=>{
+    if(l.outstanding<=0 || l.status==="Paid Off"){
+      addAssistantHTML(`<div class="bubble">${tc("loan_paid")}</div>`);
+      return;
+    }
+    if(l.status==="Behind"){
+      askChips(tc("loan_behind_ask", { days: l.overdueDays, inst: fmt(l.installment), catchup: fmt(l.installment+l.lateFee), fee: fmt(l.lateFee) }),[
+        {label:tc("see_plans"), action:"plans"},
+        {label:tc("explain_charges"), action:"charges"},
+        {label:tc("catchup_pay"), action:"pay"}
+      ], loanResolve);
+    } else {
+      askChips(tc("loan_ok_ask", { inst: fmt(l.installment), due: loanDueText("chat"), n: l.remaining }),[
+        {label:tc("pay_next"), action:"pay"},
+        {label:tc("compare_plans"), action:"plans"},
+        {label:tc("if_late"), action:"charges"},
+        {label:tc("set_reminder"), action:"reminder"}
+      ], loanResolve);
+    }
+  });
+}
+function loanResolve(opt){
+  if(opt.action==="plans") return showLoanPlans();
+  if(opt.action==="charges") return explainLoanCharges();
+  if(opt.action==="reminder") return setLoanReminder();
+  prepareLoanPayment(state.loan.status==="Behind");
+}
+function explainLoanCharges(){
+  const l=state.loan;
+  const detail = l.status==="Behind"
+    ? tc("charges_behind", { days: l.overdueDays, fee: fmt(l.lateFee), catchup: fmt(l.installment+l.lateFee) })
+    : tc("charges_ok");
+  addAssistantHTML(`<div class="bubble">${tc("charges_intro", { inst: fmt(l.installment), detail })}</div>`);
+  addAssistantHTML(`<div class="card">
+    <div class="card-row"><span class="k">${tc("k_regular")}</span><span class="v">${fmt(l.installment)}</span></div>
+    <div class="card-row"><span class="k">${tc("k_late")}</span><span class="v">${fmt(l.lateFee)}</span></div>
+    <div class="card-row"><span class="k">${tc("k_catchup")}</span><span class="v">${fmt(l.status==="Behind"?l.installment+l.lateFee:l.installment)}</span></div>
+    <div class="loan-note">${tc("loan_note_illust")}</div>
+  </div>`);
+  askChips(tc("compare_options"),[
+    {label:tc("show_plans"), action:"plans"},
+    {label:tc("not_now"), action:"later"}
+  ], opt=>{ if(opt.action==="plans") showLoanPlans(); else addAssistantHTML(`<div class="bubble">${tc("plan_unchanged")}</div>`); });
+}
+function showLoanPlans(){
+  const l=state.loan;
+  const base=Math.max(1,l.outstanding+(l.status==="Behind"?l.lateFee:0));
+  const periods=l.remaining;
+  const plans=[
+    {nameKey:"plan_faster", descKey:"plan_faster_desc", amount:Math.ceil((base/Math.max(1,Math.ceil(periods*0.75)))/100)*100, periods:Math.max(1,Math.ceil(periods*0.75))},
+    {nameKey:"plan_balanced", descKey:"plan_balanced_desc", amount:Math.ceil((base/Math.max(1,periods))/100)*100, periods:Math.max(1,periods)},
+    {nameKey:"plan_lower", descKey:"plan_lower_desc", amount:Math.ceil((base/(periods+3))/100)*100, periods:periods+3}
+  ];
+  l.planOptions=plans;
+  addAssistantHTML(`<div class="bubble">${tc("plans_intro_full")}</div>`);
+  plans.forEach((p,i)=>{
+    const rid="loan-plan-"+(++state.convo.chipRowCounter);
+    addAssistantHTML(`<div class="card loan-plan" id="${rid}" onclick="selectLoanPlan(${i},'${rid}')">
+      <b>${tc(p.nameKey)}</b><small>${tc(p.descKey)}</small>
+      <div class="loan-plan-row"><span>${tc("per_month", { amt: fmt(p.amount) })}</span><span>${tc("n_payments", { n: p.periods })}</span></div>
+    </div>`);
+  });
+}
+function selectLoanPlan(i,rid){
+  const plans=state.loan.planOptions || [];
+  const p=plans[i];
+  if(!p) return;
+  document.querySelectorAll('.loan-plan').forEach(x=>x.classList.remove('selected'));
+  const el=document.getElementById(rid); if(el) el.classList.add('selected');
+  const planName = tc(p.nameKey);
+  addUser(planName);
+  afterDelay(()=>{
+    addAssistantHTML(`<div class="card">
+      <div class="card-title"><div class="av">💳</div><div><b>${planName}</b><small style="color:var(--muted); font-weight:500;">${tc("illustrative")}</small></div></div>
+      <div class="card-row"><span class="k">${tc("k_payment")}</span><span class="v">${tc("per_month", { amt: fmt(p.amount) })}</span></div>
+      <div class="card-row"><span class="k">${tc("k_periods")}</span><span class="v">${p.periods}</span></div>
+      <div class="btn-row"><button class="btn primary" onclick="confirmLoanPlan(${i})">${tc("choose_plan")}</button><button class="btn outline" onclick="cancelAction(this)">${tc("keep_current")}</button></div>
+    </div>`);
+  });
+}
+function confirmLoanPlan(i){
+  const p=(state.loan.planOptions||[])[i];
+  if(!p) return;
+  state.loan.selectedPlan={...p, name: tc(p.nameKey)};
+  state.loan.installment=p.amount;
+  state.loan.remaining=p.periods;
+  state.loan.outstanding=p.amount*p.periods;
+  state.loan.lateFee=0;
+  state.loan.overdueDays=0;
+  state.loan.status="On Track";
+  state.loan.due=Date.now()+3*24*60*60*1000;
+  renderAll();
+  const planName = tc(p.nameKey);
+  showToast(tc("plan_toast", { name: planName, amt: fmt(p.amount), n: p.periods }));
+  addAssistantHTML(`<div class="success-box"><div class="success-check">✓</div><b>${tc("plan_updated")}</b><span style="color:var(--muted); font-size:12px;">${tc("plan_updated_sub", { amt: fmt(p.amount), n: p.periods })}</span></div>`);
+}
+function prepareLoanPayment(catchup){
+  const l=state.loan;
+  const amount=catchup ? l.installment+l.lateFee : l.installment;
+  addAssistantHTML(`<div class="bubble">${tc("prepare_repay", { amount: fmt(amount) })}</div>`);
+  addAssistantHTML(`<div class="card">
+    <div class="card-title"><div class="av">💳</div><div><b>${tc("loan_repay_title")}</b><small style="color:var(--muted); font-weight:500;">${catchup?tc("catchup_label"):tc("next_inst")}</small></div></div>
+    <div class="card-row"><span class="k">${tc("amount")}</span><span class="v">${fmt(amount)}</span></div>
+    <div class="card-row"><span class="k">${tc("wallet_bal")}</span><span class="v">${fmt(state.balance)}</span></div>
+    <div class="card-row"><span class="k">${tc("balance_after")}</span><span class="v">${fmt(Math.max(0,state.balance-amount))}</span></div>
+    <div class="btn-row"><button class="btn primary" onclick="approveLoanPayment(this,${amount})">${tc("approve_repay")}</button><button class="btn outline" onclick="cancelAction(this)">${tc("cancel")}</button></div>
+  </div>`);
+}
+function approveLoanPayment(btn,amount){
+  const card=btn.closest('.card');
+  card.innerHTML=`<div style="display:flex; align-items:center; gap:8px; padding:6px 0; color:var(--muted);"><div class="typing"><span></span><span></span><span></span></div> ${tc("processing_repay")}</div>`;
+  setTimeout(()=>{
+    if(state.balance < amount){ card.innerHTML=`<div style="color:var(--jc-red); font-size:12px;">${tc("insufficient")}</div>`; return; }
+    state.balance-=amount;
+    state.totalSent+=amount;
+    const fee=state.loan.status==="Behind" ? state.loan.lateFee : 0;
+    state.loan.outstanding=Math.max(0,state.loan.outstanding-Math.max(0,amount-fee));
+    state.loan.lateFee=0;
+    state.loan.overdueDays=0;
+    state.loan.paid+=1;
+    state.loan.remaining=Math.max(0,state.loan.remaining-1);
+    state.loan.status=state.loan.outstanding<=0 ? "Paid Off" : "On Track";
+    if(state.loan.outstanding<=0) state.loan.due=null;
+    else state.loan.due=Date.now()+3*24*60*60*1000;
+    state.txns.unshift({type:"loan",title:"Loan repayment",sub:"Loan installment",when:"Just now",amount,sign:"-",ok:true});
+    renderAll();
+    card.innerHTML=`<div class="success-box"><div class="success-check">✓</div><b>${tc("repay_complete")}</b><span style="color:var(--muted); font-size:12px;">${tc("repay_applied", { amt: fmt(amount) })}</span></div>`;
+    scrollChat();
+  },900);
+}
+function setLoanReminder(){
+  askChips(tc("reminder_ask"),[
+    {label:tc("rem_3"), value:"3 days before"},
+    {label:tc("rem_1"), value:"1 day before"},
+    {label:tc("rem_due"), value:"On the due date"},
+    {label:tc("rem_none"), value:"No reminder"}
+  ],opt=>{
+    state.loan.reminder=opt.value;
+    const msg = opt.value==="No reminder" ? tc("rem_none_saved") : tc("rem_saved", { when: opt.label });
+    addAssistantHTML(`<div class="bubble">${msg}</div><div class="loan-note">${tc("rem_proto")}</div>`);
+  });
+}
+
+/* ============================================================
+   PROACTIVE + SELF-HEALING ENGINE (debounced, no overlap)
+   ============================================================ */
+function updateBadge(n){
+  state.badge = n;
+  document.getElementById("tab-dot").style.display = n>0 ? "block" : "none";
+}
+
+const NUDGE_CONTENT = {
+  bill: ()=>{
+    const b = state.flaggedBiller;
+    return { kind:"proactive", title:tc("title_bill"), sub:tc("sub_bill_n",{name:b.name,amt:fmt(b.amount),n:b.dueInDays}),
+      toast:tc("toast_bill",{name:b.name,amt:fmt(b.amount),n:b.dueInDays,inc:fmt(b.increase)}),
+      action:()=> askChips(tc("nudge_pay_ask"), [{label:tc("nudge_yes_pay"), biller:b},{label:tc("nudge_remind"), later:true}], (opt)=>{
+        if(opt.later) return addAssistantHTML(`<div class="bubble">${tc("nudge_remind_ok")}</div>`);
+        startBill(opt.biller);
+      }) };
+  },
+  topup: ()=>({ kind:"proactive", title:tc("title_topup"), sub:tc("sub_topup_n",{pkg:state.pkg.name,hours:state.topupExpiresHours}),
+    toast:tc("toast_topup",{pkg:state.pkg.name,hours:state.topupExpiresHours,price:fmt(state.pkg.price)}),
+    action:()=> showTopupConfirm(state.pkg) }),
+  recovery: ()=>({ kind:"proactive", title:tc("title_recovery"), sub:tc("sub_recovery_n",{title:state.failedTxn.title}),
+    toast:tc("toast_recovery",{title:state.failedTxn.title,amt:fmt(state.failedTxn.amount)}),
+    action:()=> explainFailure() }),
+  offer: ()=>{
+    const o = pick(state.offers);
+    return { kind:"proactive", title:tc("title_offer"), sub:tc("sub_offer_n",{merchant:o.merchant,discount:o.discount}),
+      toast:tc("toast_offer",{ico:o.ico,reason:o.reason,discount:o.discount.toLowerCase(),merchant:o.merchant}),
+      action:()=>{
+        state.convo.chipRowCounter++;
+        const rid = "chiprow"+state.convo.chipRowCounter;
+        addAssistantHTML(`<div class="inline-chip-row" id="${rid}"><button class="inline-chip" onclick="redeemOffer(${JSON.stringify(o).replace(/"/g,'&quot;')}, '${rid}')">${tc("get_code")}</button></div>`);
+      } };
+  },
+  loan: ()=>{
+    const l=state.loan;
+    const subLabel = l.status==="Behind" ? tc("sub_loan_catchup") : l.status==="Due Today" ? tc("sub_loan_due_today") : tc("sub_loan_next");
+    return { kind:"proactive", title:tc("title_loan"), sub:`${subLabel} · ${fmt(l.installment)}`,
+      toast:l.status==="Behind"
+        ? tc("toast_loan_behind",{days:l.overdueDays,catchup:fmt(l.installment+l.lateFee),fee:fmt(l.lateFee)})
+        : tc("toast_loan_ok",{inst:fmt(l.installment),due:loanDueText("chat")}),
+      action:()=>startLoanFlow() };
+  },
+  selfheal: ()=>{
+    const options = [
+      { issueKey:"heal_issue_dup", fixKey:"heal_fix_dup" },
+      { issueKey:"heal_issue_sync", fixKey:"heal_fix_sync" },
+      { issueKey:"heal_issue_stuck", fixKey:"heal_fix_stuck" },
+    ];
+    const pickIssue = pick(options);
+    const issue = tc(pickIssue.issueKey);
+    const fix = tc(pickIssue.fixKey);
+    return { kind:"heal", title:tc("title_heal"), sub:issue,
+      toast:tc("toast_heal",{issue,fix}),
+      action:()=> addAssistantHTML(`<div class="bubble">${tc("heal_note")}</div>`) };
+  }
+};
+let pendingNudgeAction = null;
+let nudgeCooldown = false;
+const NUDGE_BTN_IDS = ["nb-bill","nb-topup","nb-recovery","nb-offer","nb-heal","nb-loan"];
+
+function setNudgeButtonsEnabled(enabled){
+  NUDGE_BTN_IDS.forEach(id=>{ const b=document.getElementById(id); if(b) b.disabled = !enabled; });
+}
+
+function showToast(text, kind){
+  const t = document.getElementById("toast");
+  t.className = "toast" + (kind==="heal" ? " heal" : "");
+  t.innerHTML = `<div class="ic">${kind==="heal" ? "\u{1FA7A}" : "\u{1F514}"}</div><div><b>${tc("assistant_title")}</b><span>${text}</span></div>`;
+  t.classList.add("show");
+  t.onclick = ()=>{ t.classList.remove("show"); openAssistant(); };
+  setTimeout(()=> t.classList.remove("show"), 4200);
+}
+function showNudgeBanner(n){
+  document.getElementById("nudge-title").textContent = n.title;
+  document.getElementById("nudge-sub").textContent = n.sub;
+  document.getElementById("home-nudge").classList.add("show");
+}
+function hideNudgeBanner(){ document.getElementById("home-nudge").classList.remove("show"); }
+function openNudgeFromBanner(){ openAssistant(); runPendingNudgeAction(); }
+function runPendingNudgeAction(){ if(pendingNudgeAction){ const fn = pendingNudgeAction; pendingNudgeAction = null; fn(); } }
+
+function fireNudge(kind){
+  if(nudgeCooldown) return; // prevents back-to-back overlapping triggers
+  nudgeCooldown = true;
+  setNudgeButtonsEnabled(false);
+
+  const n = NUDGE_CONTENT[kind]();
+  pendingNudgeAction = n.action;
+  showToast(n.toast, n.kind);
+  if(n.kind==="proactive"){ showNudgeBanner(n); updateBadge(state.badge + 1); }
+  addAssistantHTML(`<div class="bubble">${n.toast}</div>`, n.kind);
+
+  state.convo.chipRowCounter++;
+  const rid = "chiprow"+state.convo.chipRowCounter;
+  const label = n.kind==="heal" ? tc("got_it") : tc("lets_handle");
+  document.getElementById("chat-log").insertAdjacentHTML("beforeend",
+    `<div class="msg-row assistant"><div class="msg-avatar" style="visibility:hidden;">JC</div><div class="msg-body"><div class="inline-chip-row" id="${rid}"><button class="inline-chip" onclick="document.getElementById('${rid}').remove(); runPendingNudgeAction();">${label}</button></div></div></div>`);
+  scrollChat();
+
+  setTimeout(()=>{ nudgeCooldown = false; setNudgeButtonsEnabled(true); }, 3200);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  generateDemoData();
+  setAppLanguage(jcAppLanguage, { silent: true });
+  setChatLanguage(jcChatLanguage, { silent: true });
+  renderAll();
+  seedGreeting();
+  const now = new Date();
+  document.getElementById("clock").textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: jazzcash-ai-assistant
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --app-dir backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: DEV_MODE_DEFAULT
+        value: "false"
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: LLM_VERIFY_SSL
+        value: "false"
+      - key: LLM_JSON_MODE
+        value: "false"
